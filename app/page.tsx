@@ -45,6 +45,8 @@ const dummyPICs = {
     PGWS: ['UJANG', 'DADANG', 'ASEP', 'JAJANG', 'CECEP'],
 };
 
+type PICCategory = keyof typeof dummyPICs;
+
 export default function Home() {
     const [projects, setProjects] = useState<MainProject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -119,7 +121,7 @@ export default function Home() {
         return 'bg-green-400';
     };
 
-    const getRandomPIC = (category: string): string => {
+    const getRandomPIC = (category: PICCategory): string => {
         const pics = dummyPICs[category] || dummyPICs['P.M.'];
         return pics[Math.floor(Math.random() * pics.length)];
     };
