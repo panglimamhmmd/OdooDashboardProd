@@ -2,7 +2,7 @@
 
   export async function GET() {
     try {
-      const apiKey = process.env.ODOO_API_KEY;
+      const apiKey = process.env.ODOO_API_KEY_PROD;
       
       if (!apiKey) {
         return NextResponse.json(
@@ -18,7 +18,7 @@
           service: 'object',
           method: 'execute_kw',
           args: [
-            'erbe-trial5', // db
+            'erbe', // db
             2, // uid
             apiKey, // password (API key)
             'project.project', // model
@@ -27,7 +27,7 @@
                 [["stage_id", "!=", 4]]
             ], // domain (empty)
             {
-              fields: ['id', 'name' ,  "tag_ids" ,"x_studio_related_field_1ur_1j3g3lopr" , "date_start" , "date" ,],
+              fields: ['id', 'name' ,  "tag_ids" ,"x_progress_project" , "date_start" , "date" ],
               limit: 10,
               "order": "create_date desc"
             }
@@ -49,8 +49,6 @@
       }
 
       const data = await response.json();
-
-      console.dir(data.result, {depth: null}) 
 
       const dataProject= data.result;
       const tagMap : any = {
@@ -75,7 +73,7 @@
           id: item.id,
           code,
           division: tagMap[item.tag_ids?.[0]] || "Unknown",
-          progress: item.x_studio_related_field_1ur_1j3g3lopr ?? 0,
+          progress: item.x_progress_project ?? 0,
           deadline: item.date,
           start_date: item.date_start,
         });
@@ -88,8 +86,6 @@
       const result = Object.values(grouped);
     
       // console.dir({result} , {depth: null})
-
-
 
 
       // Check for JSON-RPC error
