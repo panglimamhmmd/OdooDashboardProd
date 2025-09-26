@@ -6,7 +6,7 @@
       
       if (!apiKey) {
         return NextResponse.json(
-          { error: 'ODOO_API_KEY is not configured' },
+          { error: 'ODOO_API_KEY_PROD is not configured' },
           { status: 500 }
         );
       }
