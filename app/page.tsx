@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    AlertCircle,
-    Folder,
-    RefreshCw,
-    Building,
-    Palette,
-} from 'lucide-react';
+import { CircleAlert as AlertCircle, Folder, RefreshCw, Building, Palette } from 'lucide-react';
 
 // Interface untuk sub project
 interface SubProject {
