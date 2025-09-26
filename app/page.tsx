@@ -319,9 +319,7 @@ export default function Home() {
                         <div className="flex gap-4">
                             <button
                                 onClick={() => {
-                                    const newMode: ViewMode =
-                                        viewMode === 'grid' ? 'list' : 'grid';
-                                    setViewMode(newMode);
+                                    setViewMode((prevMode) => (prevMode === 'grid' ? 'list' : 'grid'));
                                 }}
                                 className="px-6 py-3 text-lg bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             >
@@ -415,9 +413,7 @@ export default function Home() {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => {
-                                    const newMode: ViewMode =
-                                        viewMode === 'grid' ? 'list' : 'grid';
-                                    setViewMode(newMode);
+                                    setViewMode((prevMode) => (prevMode === 'grid' ? 'list' : 'grid'));
                                 }}
                                 className="px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             >
