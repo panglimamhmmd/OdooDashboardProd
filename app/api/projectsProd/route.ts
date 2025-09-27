@@ -24,7 +24,7 @@
             'project.project', // model
             'search_read', // method
             [ 
-                [["stage_id", "!=", 4]]
+                [["stage_id", "!=", 4] ["name" , "!=" "Padelio 2"]]
             ], // domain (empty)
             {
               fields: ['id', 'name' ,  "tag_ids" ,"x_progress_project" , "date_start" , "date" ],
