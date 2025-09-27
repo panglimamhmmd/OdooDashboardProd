@@ -28,7 +28,7 @@
             ], // domain (empty)
             {
               fields: ['id', 'name' ,  "tag_ids" ,"x_progress_project" , "date_start" , "date" ],
-              limit: 10,
+              limit: 100,
               "order": "create_date desc"
             }
           ]
