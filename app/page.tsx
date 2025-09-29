@@ -1,787 +1,808 @@
 'use client';
 
+import PICList from '@/components/ui/PIC';
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-    AlertCircle,
-    Folder,
-    RefreshCw,
-    Building,
-    Palette,
-} from 'lucide-react';
 
-// Interface untuk sub project
+// ========== INTERFACES (Data Structure) ==========
 interface SubProject {
     id: number;
     code: string;
     division: string;
-    progress: number;
+    progress: number; // 0.0 to 1.0
+    start_date: string; // ISO date string
+    deadline: string; // ISO date string
 }
 
-// Interface untuk main project yang berisi array sub projects
 interface MainProject {
     main_project: string;
     sub_projects: SubProject[];
 }
 
-// Type untuk response API keseluruhan
-type ProjectApiResponse = MainProject[];
-
-// Interface untuk API response wrapper
 interface ApiResponse {
     success: boolean;
     projects: MainProject[];
     error?: string;
 }
 
-// Dummy PIC data
-const dummyPICs = {
-    ARCH: ['MALAZI', 'BUDI', 'SARI', 'ANDI', 'RINI'],
-    INTR: ['AVIVA', 'DINI', 'RIAN', 'MAYA', 'YOGA'],
-    DRFT: ['ALDI', 'DIKA', 'NINA', 'FICO', 'TARA'],
-    'P.M.': ['PAK DAR', 'IBU SRI', 'PAK TOM', 'BU INA', 'PAK JON'],
-    PGWS: ['UJANG', 'DADANG', 'ASEP', 'JAJANG', 'CECEP'],
-};
+// ========== DUMMY DATA FOR LEARNING ==========
 
-export default function Home() {
+export default function LiteLearningDashboard() {
+    // ========== STATE MANAGEMENT ==========
     const [projects, setProjects] = useState<MainProject[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    type ViewMode = 'list' | 'grid';
-    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [showRawData, setShowRawData] = useState<boolean>(false);
 
+    // ========== DATA FETCHING SIMULATION ==========
     const fetchProjects = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await fetch('/api/projects');
-            const data: ApiResponse = await response.json();
+            // Simulasi network delay
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to fetch projects');
-            }
+            // Simulasi API call
+            // console.log('📡 Fetching data from API...');
 
+            // Di real app, ini akan jadi:
+            const response = await fetch('/api/projectsProd');
+            const data = await response.json();
+
+            // const data = DUMMY_API_RESPONSE;
             if (data.success) {
-                setProjects(data.projects.slice(0, 14)); // Ambil max 14 projects untuk grid 7x2
+                // Set data ke state
+                setProjects(data.projects);
+
+                // Log setiap project untuk pembelajaran
+                data.projects.forEach((project: MainProject, index: number) => {
+                    console.log(
+                        `📋 Project ${index + 1}: ${project.main_project}`
+                    );
+                    console.log(
+                        `   └── Sub-projects: ${project.sub_projects.length}`
+                    );
+                    project.sub_projects.forEach((sub) => {
+                        console.log(
+                            `       └── ${sub.division}: ${(
+                                sub.progress * 100
+                            ).toFixed(1)}%`
+                        );
+                    });
+                });
             } else {
-                throw new Error(data.error || 'Unknown error occurred');
+                throw new Error(data.error || 'API returned error');
             }
         } catch (err) {
-            setError(
-                err instanceof Error ? err.message : 'An unknown error occurred'
-            );
+            console.error('❌ Error occurred:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
+            console.log('🏁 API call completed');
         }
     };
 
+    // ========== DATA PROCESSING FUNCTIONS ==========
+
+    // Function untuk cari progress berdasarkan division
+    const findProgressByDivision = (
+        subProjects: SubProject[],
+        targetDivision: string
+    ): number => {
+        const found = subProjects.find(
+            (project) =>
+                project.division.toLowerCase() === targetDivision.toLowerCase()
+        );
+        const result = found ? found.progress * 100 : 0;
+        return result;
+    };
+
+    const findDeadlineByDivision = (
+        subProjects: SubProject[],
+        targetDivision: string
+    ): string => {
+        const found = subProjects.find(
+            (project) =>
+                project.division.toLowerCase() === targetDivision.toLowerCase()
+        );
+        const result = found ? found.deadline : 'N/A';
+        return result;
+    };
+
+    const findStartDateByDivision = (
+        subProjects: SubProject[],
+        targetDivision: string
+    ): string => {
+        const found = subProjects.find(
+            (project) =>
+                project.division.toLowerCase() === targetDivision.toLowerCase()
+        );
+
+        const result = found ? found.start_date : 'N/A';
+        return result;
+    };
+
+    // Function untuk hitung total progress semua division
+
+    // Function untuk mapping data ke format yang diinginkan
+    const mapProjectsToDisplay = (rawProjects: MainProject[]) => {
+        return rawProjects.map((project, index) => {
+            console.log(`\n📋 Processing: ${project.main_project}`);
+
+            const designProgress = findProgressByDivision(
+                project.sub_projects,
+                'Design'
+            );
+            const constructionProgress = findProgressByDivision(
+                project.sub_projects,
+                'Construction'
+            );
+            const interiorProgress = findProgressByDivision(
+                project.sub_projects,
+                'Interior'
+            );
+
+            const designDeadline = findDeadlineByDivision(
+                project.sub_projects,
+                'Design'
+            );
+            const constructionDeadline = findDeadlineByDivision(
+                project.sub_projects,
+                'Construction'
+            );
+            const interiorDeadline = findDeadlineByDivision(
+                project.sub_projects,
+                'Interior'
+            );
+
+            const designStartDate = findStartDateByDivision(
+                project.sub_projects,
+                'Design'
+            );
+            const constructionStartDate = findStartDateByDivision(
+                project.sub_projects,
+                'Construction'
+            );
+            const interiorStartDate = findStartDateByDivision(
+                project.sub_projects,
+                'Interior'
+            );
+
+            const totalProgress = calculateTotalProgress(project.sub_projects);
+
+            const mapped = {
+                index: index + 1,
+                name: project.main_project,
+                design: designProgress,
+                construction: constructionProgress,
+                interior: interiorProgress,
+                total: totalProgress,
+                subProjectCount: project.sub_projects.length,
+                designDeadline,
+                constructionDeadline,
+                interiorDeadline,
+                designStartDate,
+                constructionStartDate,
+                interiorStartDate,
+                rawData: project, // Keep original for reference
+            };
+            return mapped;
+        });
+    };
+    const calculateTotalProgress = (subProjects: SubProject[]): number => {
+        if (subProjects.length === 0) return 0;
+
+        const total = subProjects.reduce((sum, project) => {
+            console.log(`   Adding ${project.division}: ${project.progress}`);
+            return sum + project.progress;
+        }, 0);
+
+        const average = (total / subProjects.length) * 100;
+        console.log(`   Total average: ${average.toFixed(1)}%`);
+        return average;
+    };
+
+    // ========== LIFECYCLE ==========
     useEffect(() => {
         fetchProjects();
     }, []);
 
-    const handleRefresh = () => {
-        fetchProjects();
-    };
+    const renderProcessedData = () => {
+        const mappedProjects = mapProjectsToDisplay(projects);
 
-    // Function untuk mendapatkan progress berdasarkan division
-    const getProgressByDivision = (
-        subProjects: SubProject[],
-        division: string
-    ): number => {
-        const project = subProjects.find(
-            (p) => p.division.toLowerCase() === division.toLowerCase()
-        );
-        return project ? project.progress * 100 : 0;
-    };
-
-    // Function untuk mendapatkan icon division
-    const getDivisionIcon = (division: string) => {
-        switch (division.toLowerCase()) {
-            case 'design':
-                return <Palette className="h-4 w-4 text-blue-500" />;
-            case 'construction':
-                return <Building className="h-4 w-4 text-orange-500" />;
-            case 'interior':
-                return <Building className="h-4 w-4 text-green-500" />;
-            default:
-                return <Folder className="h-4 w-4 text-gray-500" />;
+        // Split projects into chunks of 7 for the grid layout
+        const projectChunks = [];
+        for (let i = 0; i < mappedProjects.length; i += 7) {
+            projectChunks.push(mappedProjects.slice(i, i + 7));
         }
-    };
 
-    // Function untuk mendapatkan warna progress bar
-    const getProgressColor = (progress: number) => {
-        if (progress === 0) return 'bg-gray-200';
-        if (progress < 30) return 'bg-red-400';
-        if (progress < 70) return 'bg-yellow-400';
-        return 'bg-green-400';
-    };
+        // Enhanced PIC names with more variety
 
-    const getRandomPIC = (category: string): string => {
-        const pics =
-            dummyPICs[category as keyof typeof dummyPICs] || dummyPICs['P.M.'];
-        return pics[Math.floor(Math.random() * pics.length)];
-    };
-
-    const formatDate = () => {
-        const now = new Date();
-        const options: Intl.DateTimeFormatOptions = {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
+        // Calculate status color based on progress vs timeline
+        const getProgressStatus = (progress: number, timeProgress: number) => {
+            if (progress >= timeProgress + 10)
+                return { color: '#22c55e', status: 'ahead' }; // Bright Green - Ahead
+            if (progress < timeProgress - 10)
+                return { color: '#f87171', status: 'behind' }; // Bright Red - Behind
+            return { color: 'white', status: 'ontrack' }; // Bright Teal - On Track
         };
-        return now
-            .toLocaleDateString('en-GB', options)
-            .replace(/ /g, ' ')
-            .toUpperCase();
-    };
 
-    // Project Card Component for Grid View
-    const ProjectCard = ({
-        project,
-        index,
-    }: {
-        project: MainProject;
-        index: number;
-    }) => {
-        const designProgress = getProgressByDivision(
-            project.sub_projects,
-            'design'
-        );
-        const constructionProgress = getProgressByDivision(
-            project.sub_projects,
-            'construction'
-        );
-        const interiorProgress = getProgressByDivision(
-            project.sub_projects,
-            'interior'
-        );
+        const formatDate = (dateString: string) => {
+            if (!dateString) return '13 NOV 2025';
+            const date = new Date(dateString);
+            return date
+                .toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                })
+                .replace('.', '')
+                .toUpperCase();
+        };
 
         return (
-            <div className="bg-gray-900 text-white p-8 rounded-xl relative overflow-hidden h-full min-h-[450px] flex flex-col">
-                {/* Project Title */}
-                <h2 className="text-2xl font-bold text-teal-400 mb-8 uppercase tracking-wide leading-tight">
-                    {project.main_project}
-                </h2>
+            <div
+                style={{
+                    marginTop: '5px ',
+                    padding: '1px',
+                    minHeight: '100vh',
+                }}
+            >
+                {projectChunks.map((chunk, rowIndex) => (
+                    <div
+                        key={rowIndex}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(280px, 1fr))',
+                            gap: '5px',
+                            marginBottom: '5px',
+                            maxWidth: '100%',
+                            borderColor: '#cbd5e1',
+                        }}
+                    >
+                        {chunk.map((project, index) => {
+                            // Calculate time progress for each phase
+                            const designTimeProgress = Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    Math.round(
+                                        ((new Date().getTime() -
+                                            new Date(
+                                                project.designStartDate
+                                            ).getTime()) /
+                                            (new Date(
+                                                project.designDeadline
+                                            ).getTime() -
+                                                new Date(
+                                                    project.designStartDate
+                                                ).getTime())) *
+                                            100
+                                    )
+                                )
+                            );
+                            const constructionTimeProgress = Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    Math.round(
+                                        ((new Date().getTime() -
+                                            new Date(
+                                                project.constructionStartDate
+                                            ).getTime()) /
+                                            (new Date(
+                                                project.constructionDeadline
+                                            ).getTime() -
+                                                new Date(
+                                                    project.constructionStartDate
+                                                ).getTime())) *
+                                            100
+                                    )
+                                )
+                            );
+                            const interiorTimeProgress = Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    Math.round(
+                                        ((new Date().getTime() -
+                                            new Date(
+                                                project.interiorStartDate
+                                            ).getTime()) /
+                                            (new Date(
+                                                project.interiorDeadline
+                                            ).getTime() -
+                                                new Date(
+                                                    project.interiorStartDate
+                                                ).getTime())) *
+                                            100
+                                    )
+                                )
+                            );
 
-                {/* Progress Bars */}
-                <div className="space-y-6 mb-8 flex-grow">
-                    {/* Design Progress */}
-                    <div className="flex items-center gap-4">
-                        <span className="text-4xl font-bold text-white w-20 text-center">
-                            {Math.round(designProgress)}%
-                        </span>
-                        <div className="flex-1">
-                            <div className="text-base font-medium text-white mb-2">
-                                DESIGN {designProgress < 100 ? '(revisi)' : ''}
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-none h-4 border-2 border-teal-400">
-                                <div
-                                    className="bg-teal-400 h-full transition-all duration-1000 ease-out"
-                                    style={{ width: `${designProgress}%` }}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                            const designStatus = getProgressStatus(
+                                project.design,
+                                designTimeProgress
+                            );
+                            const constructionStatus = getProgressStatus(
+                                project.construction,
+                                constructionTimeProgress
+                            );
+                            const interiorStatus = getProgressStatus(
+                                project.interior,
+                                interiorTimeProgress
+                            );
 
-                    {/* Construction Progress */}
-                    <div className="flex items-center gap-4">
-                        <span className="text-4xl font-bold text-white w-20 text-center">
-                            {Math.round(constructionProgress)}%
-                        </span>
-                        <div className="flex-1">
-                            <div className="text-base font-medium text-white mb-2">
-                                SIPIL
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-none h-4 border-2 border-teal-400">
+                            return (
                                 <div
-                                    className="bg-teal-400 h-full transition-all duration-1000 ease-out"
+                                    key={project.index}
                                     style={{
-                                        width: `${constructionProgress}%`,
+                                        backgroundColor: 'black',
+                                        backdropFilter: 'blur(10px)',
+                                        color: '#1e293b',
+                                        borderRadius: '16px',
+                                        overflow: 'hidden',
+                                        minHeight: '420px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        boxShadow:
+                                            '0 4px 20px rgba(0,0,0,0.08)',
+                                        border: '1px solid rgba(203, 213, 225, 0.4)',
+                                        transition: 'all 0.3s ease',
+                                        cursor: 'pointer',
+                                        position: 'relative',
                                     }}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform =
+                                            'translateY(-4px)';
+                                        e.currentTarget.style.boxShadow =
+                                            '0 12px 40px rgba(0,0,0,0.12)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform =
+                                            'translateY(0)';
+                                        e.currentTarget.style.boxShadow =
+                                            '0 4px 20px rgba(0,0,0,0.08)';
+                                    }}
+                                >
+                                    {/* Status Indicator */}
 
-                    {/* Interior Progress */}
-                    <div className="flex items-center gap-4">
-                        <span className="text-4xl font-bold text-white w-20 text-center">
-                            {Math.round(interiorProgress)}%
-                        </span>
-                        <div className="flex-1">
-                            <div className="text-base font-medium text-white mb-2">
-                                INTERIOR
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-none h-4 border-2 border-teal-400">
+                                    {/* Header - Project Name */}
+                                    <div
+                                        style={{
+                                            background: 'black',
+                                            padding: '6px',
+                                            textAlign: 'center',
+                                            position: 'relative',
+                                            height: '70px', // Fixed height untuk 2 baris
+                                            textOverflow: 'ellipsis',
+                                            lineHeight: '1.2',
+                                        }}
+                                    >
+                                        {/* <div
+                                            style={{
+                                                position: 'absolute',
+                                                top: '8px',
+                                                left: '15px',
+                                                fontSize:
+                                                    'clamp(15px, 1vw, 12px)',
+                                                fontWeight: '500',
+                                                color: 'rgba(255,255,255,0.7)',
+                                            }}
+                                        >
+                                            #{project.index}
+                                        </div> */}
+                                        <div
+                                            style={{
+                                                fontSize:
+                                                    'clamp(22px, 1.8vw, 18px)',
+                                                fontWeight: '600',
+                                                color: 'white',
+                                                letterSpacing: '0.5px',
+                                                lineHeight: '1.3',
+                                                margin: '10px 4px 10px 4px',
+                                            }}
+                                        >
+                                            {project.name.toUpperCase()}
+                                        </div>
+                                        {/* <div
+                                            style={{
+                                                fontSize:
+                                                    'clamp(12px, 1.2vw, 14px)',
+                                                fontWeight: '500',
+                                                color: 'rgba(255,255,255,0.9)',
+                                                marginTop: '5px',
+                                            }}
+                                        >
+                                            {project.total.toFixed(1)}% Complete
+                                        </div> */}
+                                    </div>
+
+                                    {/* Progress Section */}
+                                    <div
+                                        style={{
+                                            padding: '5px 20px 20px',
+                                            flex: 1,
+                                        }}
+                                    >
+                                        {/* Design Progress */}
+                                        <div style={{ marginBottom: '3px' }}>
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent:
+                                                        'space-between',
+                                                    alignItems: 'center',
+                                                    marginBottom: '8px',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(18px, 2.5vw, 24px)',
+                                                            fontWeight: '700',
+                                                            color: designStatus.color,
+                                                            minWidth: '55px',
+                                                        }}
+                                                    >
+                                                        {project.design.toFixed(
+                                                            0
+                                                        )}
+                                                        %
+                                                    </span>
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(20px, 1.3vw, 14px)',
+                                                            fontWeight: '600',
+                                                            marginLeft: '12px',
+                                                            color: 'white',
+                                                        }}
+                                                    >
+                                                        DESIGN
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(8px, 0.9vw, 10px)',
+                                                        color: designStatus.color,
+                                                        fontWeight: '600',
+                                                        textTransform:
+                                                            'uppercase',
+                                                    }}
+                                                >
+                                                    {designStatus.status}
+                                                </div>
+                                            </div>
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    width: '100%',
+                                                    height: '18px',
+                                                    backgroundColor: 'Black',
+                                                    borderRadius: '4px',
+                                                    overflow: 'hidden',
+                                                    border: '1px solid #e2e8f0',
+                                                }}
+                                            >
+                                                {/* Time progress (background) */}
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            '#e2e8f0',
+                                                        width: `${designTimeProgress}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                                {/* Project progress (foreground) */}
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            designStatus.color,
+                                                        width: `${project.design}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Construction Progress */}
+                                        <div style={{ marginBottom: '3px' }}>
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent:
+                                                        'space-between',
+                                                    alignItems: 'center',
+                                                    marginBottom: '8px',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(18px, 2.5vw, 24px)',
+                                                            fontWeight: '700',
+                                                            color: constructionStatus.color,
+                                                            minWidth: '55px',
+                                                        }}
+                                                    >
+                                                        {project.construction.toFixed(
+                                                            0
+                                                        )}
+                                                        %
+                                                    </span>
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(20px, 1.3vw, 14px)',
+                                                            fontWeight: '600',
+                                                            marginLeft: '12px',
+                                                            color: 'white',
+                                                        }}
+                                                    >
+                                                        SIPIL
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(8px, 0.9vw, 10px)',
+                                                        color: constructionStatus.color,
+                                                        fontWeight: '600',
+                                                        textTransform:
+                                                            'uppercase',
+                                                    }}
+                                                >
+                                                    {constructionStatus.status}
+                                                </div>
+                                            </div>
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    width: '100%',
+                                                    height: '18px',
+                                                    backgroundColor: 'black',
+                                                    borderRadius: '4px',
+                                                    overflow: 'hidden',
+                                                    border: '1px solid #e2e8f0',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            '#e2e8f0',
+                                                        width: `${constructionTimeProgress}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            constructionStatus.color,
+                                                        width: `${project.construction}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Interior Progress */}
+                                        <div style={{ marginBottom: '3px' }}>
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent:
+                                                        'space-between',
+                                                    alignItems: 'center',
+                                                    marginBottom: '8px',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(18px, 2.5vw, 24px)',
+                                                            fontWeight: '700',
+                                                            color: interiorStatus.color,
+                                                            minWidth: '55px',
+                                                        }}
+                                                    >
+                                                        {project.interior.toFixed(
+                                                            0
+                                                        )}
+                                                        %
+                                                    </span>
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                'clamp(20px, 1.3vw, 14px)',
+                                                            fontWeight: '600',
+                                                            marginLeft: '12px',
+                                                            color: 'white',
+                                                        }}
+                                                    >
+                                                        INTERIOR
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(8px, 0.9vw, 10px)',
+                                                        color: interiorStatus.color,
+                                                        fontWeight: '600',
+                                                        textTransform:
+                                                            'uppercase',
+                                                    }}
+                                                >
+                                                    {interiorStatus.status}
+                                                </div>
+                                            </div>
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    width: '100%',
+                                                    height: '15px',
+                                                    backgroundColor: 'black ',
+                                                    borderRadius: '4px',
+                                                    overflow: 'hidden',
+                                                    border: '1px solid #e2e8f0',
+                                                }}
+                                            >
+                                                {/* cbd5e1 */}
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            '#e2e8f0',
+                                                        width: `${interiorTimeProgress}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        height: '100%',
+                                                        backgroundColor:
+                                                            interiorStatus.color,
+                                                        width: `${project.interior}%`,
+                                                        transition:
+                                                            'width 0.3s ease',
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom Section - PIC Info */}
+                                    <div
+                                        style={{
+                                            background: 'Black',
+                                            padding: '18px',
+                                            marginTop: 'auto',
+                                        }}
+                                    >
+                                        {/* PIC List */}
+                                        <PICList projectName={project.name} />
+
+                                        {/* BAST Date */}
+                                        <div
+                                            style={{
+                                                textAlign: 'center',
+                                                color: 'white',
+                                                fontWeight: '600',
+                                                fontSize:
+                                                    'clamp(11px, 1.3vw, 14px)',
+                                                letterSpacing: '0.5px',
+                                            }}
+                                        >
+                                            BAST :{' '}
+                                            {formatDate(
+                                                project.interiorDeadline
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {/* Fill empty slots if chunk has less than 7 items */}
+                        {Array.from(
+                            { length: 7 - chunk.length },
+                            (_, index) => (
                                 <div
-                                    className="bg-teal-400 h-full transition-all duration-1000 ease-out"
-                                    style={{ width: `${interiorProgress}%` }}
-                                />
-                            </div>
-                        </div>
+                                    key={`empty-${index}`}
+                                    style={{ visibility: 'hidden' }}
+                                ></div>
+                            )
+                        )}
                     </div>
-                </div>
-
-                {/* Bottom Section with PICs */}
-                <div className="bg-teal-500 -mx-8 -mb-8 p-6 mt-auto">
-                    <div className="grid grid-cols-2 gap-3 text-base">
-                        <div className="flex justify-between items-center">
-                            <span className="text-white font-medium">ARCH</span>
-                            <span className="bg-gray-200 text-black px-4 py-2 rounded-full font-medium">
-                                {getRandomPIC('ARCH')}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-white font-medium">INTR</span>
-                            <span className="bg-gray-200 text-black px-4 py-2 rounded-full font-medium">
-                                {getRandomPIC('INTR')}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-white font-medium">DRFT</span>
-                            <span className="bg-gray-200 text-black px-4 py-2 rounded-full font-medium">
-                                {getRandomPIC('DRFT')}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-white font-medium">P.M.</span>
-                            <span className="bg-gray-200 text-black px-4 py-2 rounded-full font-medium">
-                                {getRandomPIC('P.M.')}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center col-span-2">
-                            <span className="text-white font-medium">PGWS</span>
-                            <span className="bg-gray-200 text-black px-4 py-2 rounded-full font-medium">
-                                {getRandomPIC('PGWS')}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Date */}
-                    <div className="text-center mt-4 pt-4 border-t border-teal-400">
-                        <span className="text-white font-bold text-base">
-                            BAST : {formatDate()}
-                        </span>
-                    </div>
-                </div>
+                ))}
             </div>
         );
     };
-
-    if (viewMode === 'grid') {
-        if (loading) {
-            return (
-                <div className="min-h-screen bg-gray-100 p-8">
-                    <div className="max-w-[2400px] mx-auto">
-                        <div className="flex justify-center items-center h-96">
-                            <RefreshCw className="w-12 h-12 animate-spin text-teal-500" />
-                            <span className="ml-4 text-2xl text-gray-600">
-                                Loading projects...
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        if (error) {
-            return (
-                <div className="min-h-screen bg-gray-100 p-8">
-                    <div className="max-w-[2400px] mx-auto">
-                        <div className="flex justify-center items-center h-96">
-                            <AlertCircle className="w-12 h-12 text-red-500" />
-                            <span className="ml-4 text-2xl text-red-600">
-                                {error}
-                            </span>
-                            <button
-                                onClick={handleRefresh}
-                                className="ml-6 px-6 py-3 text-lg bg-teal-500 text-white rounded hover:bg-teal-600"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="min-h-screen bg-gray-100 p-8">
-                <div className="max-w-[2400px] mx-auto">
-                    {/* Header */}
-                    <div className="flex justify-between items-center mb-12">
-                        <div>
-                            <h1 className="text-6xl font-bold text-gray-900 mb-4">
-                                Project Management Dashboard
-                            </h1>
-                            <p className="text-slate-600 text-2xl">
-                                Main Projects with Division Progress
-                            </p>
-                        </div>
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => {
-                                    const newMode: ViewMode =
-                                        viewMode === 'grid' ? 'list' : 'grid';
-                                    setViewMode(newMode);
-                                }}
-                                className="px-6 py-3 text-lg bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                            >
-                                {viewMode === 'grid'
-                                    ? 'List View'
-                                    : 'Grid View'}
-                            </button>
-                            <button
-                                onClick={handleRefresh}
-                                className="flex items-center gap-3 px-6 py-3 text-lg bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"
-                            >
-                                <RefreshCw className="w-6 h-6" />
-                                Refresh
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Grid 7x2 */}
-                    {projects.length > 0 && (
-                        <>
-                            <div className="grid grid-cols-7 gap-8 mb-10">
-                                {projects.slice(0, 7).map((project, index) => (
-                                    <ProjectCard
-                                        key={index}
-                                        project={project}
-                                        index={index}
-                                    />
-                                ))}
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-8 mb-12">
-                                {projects.slice(7, 14).map((project, index) => (
-                                    <ProjectCard
-                                        key={index + 7}
-                                        project={project}
-                                        index={index + 7}
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {projects.length === 0 && !loading && (
-                        <div className="text-center py-16 text-slate-500">
-                            <Folder className="h-20 w-20 mx-auto mb-6 opacity-50" />
-                            <p className="text-2xl font-medium mb-2">
-                                No projects found
-                            </p>
-                            <p className="text-lg">
-                                Check your API configuration.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Footer Info */}
-                    <div className="text-center text-lg text-slate-500">
-                        <p>
-                            Connected to:{' '}
-                            <span className="font-mono">
-                                erbe-trial5.odoo.com
-                            </span>
-                        </p>
-                        <p className="mt-2">
-                            Displaying {projects.length} projects in grid view
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // List View (Original)
+    // ========== MAIN RENDER ==========
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-            <div className="container mx-auto px-4 py-8 max-w-6xl">
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-slate-900 mb-2">
-                        Project Management Dashboard
-                    </h1>
-                    <p className="text-slate-600 text-lg">
-                        Main Projects with Division Progress
-                    </p>
+        <div style={{ padding: '0px', fontFamily: 'Arial, sans-serif' }}>
+            {/* Error Display */}
+            {error && (
+                <div
+                    style={{
+                        padding: '0px',
+                        backgroundColor: '#f8d7da',
+                        border: '1px solid #f5c6cb',
+                        marginBottom: '0px',
+                    }}
+                >
+                    <h3>❌ Error</h3>
+                    <p>{error}</p>
                 </div>
+            )}
 
-                <Card className="mb-6">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-xl flex items-center gap-2">
-                            <Folder className="h-5 w-5" />
-                            Main Projects
-                        </CardTitle>
-                        <div className="flex gap-2">
-                            {/* <button
-                                onClick={() => {
-                                    const newMode =
-                                        viewMode === 'grid' ? 'list' : 'grid';
-                                    setViewMode(newMode as 'grid' | 'list');
-                                }}
-                                className="px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                            >
-                                Grid View
-                            </button> */}
-                            <button
-                                onClick={handleRefresh}
-                                disabled={loading}
-                                className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                <RefreshCw
-                                    className={`h-4 w-4 ${
-                                        loading ? 'animate-spin' : ''
-                                    }`}
-                                />
-                                Refresh
-                            </button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loading && (
-                            <div className="space-y-6">
-                                {[...Array(3)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="p-6 border rounded-lg"
-                                    >
-                                        <Skeleton className="h-6 w-64 mb-4" />
-                                        <div className="space-y-3">
-                                            <Skeleton className="h-4 w-full" />
-                                            <Skeleton className="h-4 w-full" />
-                                            <Skeleton className="h-4 w-full" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+            {/* Raw Data */}
+            {/* {showRawData && renderRawData()} */}
 
-                        {error && (
-                            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-                                <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                                <div>
-                                    <p className="font-medium">
-                                        Error loading projects
-                                    </p>
-                                    <p className="text-sm text-red-600">
-                                        {error}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+            {/* Processed Data */}
+            {!loading && !error && projects.length > 0 && renderProcessedData()}
 
-                        {!loading && !error && projects.length === 0 && (
-                            <div className="text-center py-8 text-slate-500">
-                                <Folder className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p className="text-lg font-medium">
-                                    No projects found
-                                </p>
-                                <p className="text-sm">
-                                    Check your API configuration.
-                                </p>
-                            </div>
-                        )}
-
-                        {!loading && !error && projects.length > 0 && (
-                            <div className="space-y-6">
-                                {projects.map((project, index) => (
-                                    <div
-                                        key={index}
-                                        className="p-6 bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow"
-                                    >
-                                        {/* Main Project Name */}
-                                        <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                            <Folder className="h-5 w-5 text-slate-600" />
-                                            {project.main_project}
-                                        </h2>
-
-                                        {/* Division Progress */}
-                                        <div className="space-y-3">
-                                            {/* Design Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon('design')}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Design:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'design'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'design'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'design'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Construction Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon(
-                                                        'construction'
-                                                    )}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Construction:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'construction'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'construction'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'construction'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Interior Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon(
-                                                        'interior'
-                                                    )}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Interior:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'interior'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'interior'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'interior'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Sub Projects Count */}
-                                        <div className="mt-4 pt-3 border-t border-slate-100">
-                                            <Badge
-                                                variant="outline"
-                                                className="text-xs"
-                                            >
-                                                {project.sub_projects.length}{' '}
-                                                sub-project
-                                                {project.sub_projects.length !==
-                                                1
-                                                    ? 's'
-                                                    : ''}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                ))}
-                                {projects.map((project, index) => (
-                                    <div
-                                        key={index}
-                                        className="p-6 bg-white border border-slate-200 rounded-lg hover:shadow-md transition-shadow"
-                                    >
-                                        {/* Main Project Name */}
-                                        <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                            <Folder className="h-5 w-5 text-slate-600" />
-                                            {project.main_project}
-                                        </h2>
-
-                                        {/* Division Progress */}
-                                        <div className="space-y-3">
-                                            {/* Design Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon('design')}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Design:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'design'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'design'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'design'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Construction Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon(
-                                                        'construction'
-                                                    )}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Construction:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'construction'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'construction'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'construction'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Interior Progress */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    {getDivisionIcon(
-                                                        'interior'
-                                                    )}
-                                                    <span className="text-sm font-medium text-slate-700">
-                                                        Progress Interior:
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                                        <div
-                                                            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                                                                getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'interior'
-                                                                )
-                                                            )}`}
-                                                            style={{
-                                                                width: `${getProgressByDivision(
-                                                                    project.sub_projects,
-                                                                    'interior'
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-slate-900 min-w-[3rem] text-right">
-                                                        {getProgressByDivision(
-                                                            project.sub_projects,
-                                                            'interior'
-                                                        ).toFixed(1)}
-                                                        %
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Sub Projects Count */}
-                                        <div className="mt-4 pt-3 border-t border-slate-100">
-                                            <Badge
-                                                variant="outline"
-                                                className="text-xs"
-                                            >
-                                                {project.sub_projects.length}{' '}
-                                                sub-project
-                                                {project.sub_projects.length !==
-                                                1
-                                                    ? 's'
-                                                    : ''}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <div className="text-center text-sm text-slate-500">
-                    <p>
-                        Connected to:{' '}
-                        <span className="font-mono">erbe-trial5.odoo.com</span>
-                    </p>
-                    <p className="mt-1">
-                        Showing main projects with division progress breakdown
-                    </p>
+            {/* No Data */}
+            {!loading && !error && projects.length === 0 && (
+                <div
+                    style={{
+                        padding: '0px',
+                        textAlign: 'center',
+                        backgroundColor: '#e2e3e5',
+                        border: '1px solid #d1d3d4',
+                    }}
+                >
+                    <h3>📭 No Data</h3>
+                    <p>Click Refresh Data 🔄 to load projects</p>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

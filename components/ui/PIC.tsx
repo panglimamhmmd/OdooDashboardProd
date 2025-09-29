@@ -26,15 +26,21 @@ export default function PICList({ projectName }: { projectName: string }) {
                         display: 'flex',
                         alignItems: 'center',
                         marginBottom: '6px',
+                        gap: '10px',
                     }}
                 >
                     <span
                         style={{
                             color: 'white',
                             fontWeight: 'bold',
-                            fontSize: 'clamp(15px, 1.2vw, 12px)',
-                            minWidth: '45px',
-                            marginRight: '10px',
+                            fontSize: 'clamp(11px, 1.2vw, 20px)',
+                            minWidth: '80px',
+                            maxWidth: '120px',
+                            marginRight: '0',
+                            flexShrink: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                         }}
                     >
                         {role}
@@ -43,14 +49,18 @@ export default function PICList({ projectName }: { projectName: string }) {
                         style={{
                             backgroundColor: 'rgba(255,255,255,0.95)',
                             color: '#1a1a1a',
-                            padding: '6px 12px',
-                            borderRadius: '15px',
-                            fontSize: 'clamp(15px, 1vw, 11px)',
+                            padding: '3px',
+                            borderRadius: '10px',
+                            fontSize: 'clamp(20px, 1vw, 15px)',
                             fontWeight: 'bold',
                             flex: 1,
                             textAlign: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                             backdropFilter: 'blur(5px)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
                         }}
                     >
                         {name}

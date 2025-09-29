@@ -221,10 +221,10 @@ export default function LiteLearningDashboard() {
         // Calculate status color based on progress vs timeline
         const getProgressStatus = (progress: number, timeProgress: number) => {
             if (progress >= timeProgress + 10)
-                return { color: '#10b981', status: 'ahead' }; // Green - Ahead
+                return { color: '#22c55e', status: 'ahead' }; // Bright Green - Ahead
             if (progress < timeProgress - 10)
-                return { color: '#ef4444', status: 'behind' }; // Red - Behind
-            return { color: '#20b2aa', status: 'ontrack' }; // Teal - On Track
+                return { color: '#f87171', status: 'behind' }; // Bright Red - Behind
+            return { color: 'white', status: 'ontrack' }; // Bright Teal - On Track
         };
 
         const formatDate = (dateString: string) => {
@@ -243,8 +243,8 @@ export default function LiteLearningDashboard() {
         return (
             <div
                 style={{
-                    marginTop: '20px',
-                    padding: '20px',
+                    marginTop: '5px ',
+                    padding: '1px',
                     minHeight: '100vh',
                 }}
             >
@@ -255,9 +255,10 @@ export default function LiteLearningDashboard() {
                             display: 'grid',
                             gridTemplateColumns:
                                 'repeat(auto-fit, minmax(280px, 1fr))',
-                            gap: '10px',
-                            marginBottom: '30px',
+                            gap: '5px',
+                            marginBottom: '5px',
                             maxWidth: '100%',
+                            borderColor: '#cbd5e1',
                         }}
                     >
                         {chunk.map((project, index) => {
@@ -337,8 +338,7 @@ export default function LiteLearningDashboard() {
                                 <div
                                     key={project.index}
                                     style={{
-                                        backgroundColor: 'white',
-                                        // 'rgba(248, 250, 252, 0.98)',
+                                        backgroundColor: 'black',
                                         backdropFilter: 'blur(10px)',
                                         color: '#1e293b',
                                         borderRadius: '16px',
@@ -367,32 +367,20 @@ export default function LiteLearningDashboard() {
                                     }}
                                 >
                                     {/* Status Indicator */}
-                                    <div
-                                        style={{
-                                            position: 'absolute',
-                                            top: '15px',
-                                            right: '15px',
-                                            width: '8px',
-                                            height: '8px',
-                                            borderRadius: '50%',
-                                            backgroundColor:
-                                                project.total > 50
-                                                    ? '#059669'
-                                                    : '#dc2626',
-                                            zIndex: 2,
-                                        }}
-                                    ></div>
 
                                     {/* Header - Project Name */}
                                     <div
                                         style={{
-                                            background: '#475569',
-                                            padding: '20px',
+                                            background: 'black',
+                                            padding: '6px',
                                             textAlign: 'center',
                                             position: 'relative',
+                                            height: '70px', // Fixed height untuk 2 baris
+                                            textOverflow: 'ellipsis',
+                                            lineHeight: '1.2',
                                         }}
                                     >
-                                        <div
+                                        {/* <div
                                             style={{
                                                 position: 'absolute',
                                                 top: '8px',
@@ -404,21 +392,21 @@ export default function LiteLearningDashboard() {
                                             }}
                                         >
                                             #{project.index}
-                                        </div>
+                                        </div> */}
                                         <div
                                             style={{
                                                 fontSize:
-                                                    'clamp(14px, 1.8vw, 18px)',
+                                                    'clamp(22px, 1.8vw, 18px)',
                                                 fontWeight: '600',
                                                 color: 'white',
                                                 letterSpacing: '0.5px',
                                                 lineHeight: '1.3',
-                                                margin: '5px 0',
+                                                margin: '10px 4px 10px 4px',
                                             }}
                                         >
                                             {project.name.toUpperCase()}
                                         </div>
-                                        <div
+                                        {/* <div
                                             style={{
                                                 fontSize:
                                                     'clamp(12px, 1.2vw, 14px)',
@@ -428,13 +416,18 @@ export default function LiteLearningDashboard() {
                                             }}
                                         >
                                             {project.total.toFixed(1)}% Complete
-                                        </div>
+                                        </div> */}
                                     </div>
 
                                     {/* Progress Section */}
-                                    <div style={{ padding: '20px', flex: 1 }}>
+                                    <div
+                                        style={{
+                                            padding: '5px 20px 20px',
+                                            flex: 1,
+                                        }}
+                                    >
                                         {/* Design Progress */}
-                                        <div style={{ marginBottom: '18px' }}>
+                                        <div style={{ marginBottom: '3px' }}>
                                             <div
                                                 style={{
                                                     display: 'flex',
@@ -467,10 +460,10 @@ export default function LiteLearningDashboard() {
                                                     <span
                                                         style={{
                                                             fontSize:
-                                                                'clamp(11px, 1.3vw, 14px)',
+                                                                'clamp(20px, 1.3vw, 14px)',
                                                             fontWeight: '600',
                                                             marginLeft: '12px',
-                                                            color: '#374151',
+                                                            color: 'white',
                                                         }}
                                                     >
                                                         DESIGN
@@ -493,8 +486,8 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     position: 'relative',
                                                     width: '100%',
-                                                    height: '15px',
-                                                    backgroundColor: '#f1f5f9',
+                                                    height: '18px',
+                                                    backgroundColor: 'Black',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',
                                                     border: '1px solid #e2e8f0',
@@ -508,7 +501,7 @@ export default function LiteLearningDashboard() {
                                                         left: 0,
                                                         height: '100%',
                                                         backgroundColor:
-                                                            '#cbd5e1',
+                                                            '#e2e8f0',
                                                         width: `${designTimeProgress}%`,
                                                         transition:
                                                             'width 0.3s ease',
@@ -532,7 +525,7 @@ export default function LiteLearningDashboard() {
                                         </div>
 
                                         {/* Construction Progress */}
-                                        <div style={{ marginBottom: '18px' }}>
+                                        <div style={{ marginBottom: '3px' }}>
                                             <div
                                                 style={{
                                                     display: 'flex',
@@ -565,10 +558,10 @@ export default function LiteLearningDashboard() {
                                                     <span
                                                         style={{
                                                             fontSize:
-                                                                'clamp(11px, 1.3vw, 14px)',
+                                                                'clamp(20px, 1.3vw, 14px)',
                                                             fontWeight: '600',
                                                             marginLeft: '12px',
-                                                            color: '#374151',
+                                                            color: 'white',
                                                         }}
                                                     >
                                                         SIPIL
@@ -591,8 +584,8 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     position: 'relative',
                                                     width: '100%',
-                                                    height: '15px',
-                                                    backgroundColor: '#f1f5f9',
+                                                    height: '18px',
+                                                    backgroundColor: 'black',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',
                                                     border: '1px solid #e2e8f0',
@@ -605,7 +598,7 @@ export default function LiteLearningDashboard() {
                                                         left: 0,
                                                         height: '100%',
                                                         backgroundColor:
-                                                            '#cbd5e1',
+                                                            '#e2e8f0',
                                                         width: `${constructionTimeProgress}%`,
                                                         transition:
                                                             'width 0.3s ease',
@@ -628,7 +621,7 @@ export default function LiteLearningDashboard() {
                                         </div>
 
                                         {/* Interior Progress */}
-                                        <div style={{ marginBottom: '20px' }}>
+                                        <div style={{ marginBottom: '3px' }}>
                                             <div
                                                 style={{
                                                     display: 'flex',
@@ -661,10 +654,10 @@ export default function LiteLearningDashboard() {
                                                     <span
                                                         style={{
                                                             fontSize:
-                                                                'clamp(11px, 1.3vw, 14px)',
+                                                                'clamp(20px, 1.3vw, 14px)',
                                                             fontWeight: '600',
                                                             marginLeft: '12px',
-                                                            color: '#374151',
+                                                            color: 'white',
                                                         }}
                                                     >
                                                         INTERIOR
@@ -688,12 +681,13 @@ export default function LiteLearningDashboard() {
                                                     position: 'relative',
                                                     width: '100%',
                                                     height: '15px',
-                                                    backgroundColor: '#f1f5f9',
+                                                    backgroundColor: 'black ',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',
                                                     border: '1px solid #e2e8f0',
                                                 }}
                                             >
+                                                {/* cbd5e1 */}
                                                 <div
                                                     style={{
                                                         position: 'absolute',
@@ -701,7 +695,7 @@ export default function LiteLearningDashboard() {
                                                         left: 0,
                                                         height: '100%',
                                                         backgroundColor:
-                                                            '#cbd5e1',
+                                                            '#e2e8f0',
                                                         width: `${interiorTimeProgress}%`,
                                                         transition:
                                                             'width 0.3s ease',
@@ -727,7 +721,7 @@ export default function LiteLearningDashboard() {
                                     {/* Bottom Section - PIC Info */}
                                     <div
                                         style={{
-                                            background: '#64748b',
+                                            background: 'Black',
                                             padding: '18px',
                                             marginTop: 'auto',
                                         }}
@@ -773,15 +767,15 @@ export default function LiteLearningDashboard() {
     };
     // ========== MAIN RENDER ==========
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ padding: '0px', fontFamily: 'Arial, sans-serif' }}>
             {/* Error Display */}
             {error && (
                 <div
                     style={{
-                        padding: '15px',
+                        padding: '0px',
                         backgroundColor: '#f8d7da',
                         border: '1px solid #f5c6cb',
-                        marginBottom: '20px',
+                        marginBottom: '0px',
                     }}
                 >
                     <h3>❌ Error</h3>
@@ -799,7 +793,7 @@ export default function LiteLearningDashboard() {
             {!loading && !error && projects.length === 0 && (
                 <div
                     style={{
-                        padding: '20px',
+                        padding: '0px',
                         textAlign: 'center',
                         backgroundColor: '#e2e3e5',
                         border: '1px solid #d1d3d4',
