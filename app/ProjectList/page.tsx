@@ -337,8 +337,8 @@ export default function LiteLearningDashboard() {
                                 <div
                                     key={project.index}
                                     style={{
-                                        backgroundColor:
-                                            'rgba(248, 250, 252, 0.98)',
+                                        backgroundColor: 'white',
+                                        // 'rgba(248, 250, 252, 0.98)',
                                         backdropFilter: 'blur(10px)',
                                         color: '#1e293b',
                                         borderRadius: '16px',
@@ -398,7 +398,7 @@ export default function LiteLearningDashboard() {
                                                 top: '8px',
                                                 left: '15px',
                                                 fontSize:
-                                                    'clamp(10px, 1vw, 12px)',
+                                                    'clamp(15px, 1vw, 12px)',
                                                 fontWeight: '500',
                                                 color: 'rgba(255,255,255,0.7)',
                                             }}
@@ -493,7 +493,7 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     position: 'relative',
                                                     width: '100%',
-                                                    height: '8px',
+                                                    height: '15px',
                                                     backgroundColor: '#f1f5f9',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',
@@ -591,7 +591,7 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     position: 'relative',
                                                     width: '100%',
-                                                    height: '8px',
+                                                    height: '15px',
                                                     backgroundColor: '#f1f5f9',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',
@@ -687,7 +687,7 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     position: 'relative',
                                                     width: '100%',
-                                                    height: '8px',
+                                                    height: '15px',
                                                     backgroundColor: '#f1f5f9',
                                                     borderRadius: '4px',
                                                     overflow: 'hidden',

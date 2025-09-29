@@ -2,8 +2,8 @@ import { PIC_MAP, ProjectName } from '@/app/PIC';
 
 // Ubah prop type untuk menerima string apapun
 export default function PICList({ projectName }: { projectName: string }) {
-    const projectPICs = PIC_MAP[projectName as keyof typeof PIC_MAP];
-
+    const projectPICs =
+        PIC_MAP[projectName.toUpperCase() as keyof typeof PIC_MAP];
     if (!projectPICs)
         return (
             <div
@@ -32,7 +32,7 @@ export default function PICList({ projectName }: { projectName: string }) {
                         style={{
                             color: 'white',
                             fontWeight: 'bold',
-                            fontSize: 'clamp(10px, 1.2vw, 12px)',
+                            fontSize: 'clamp(15px, 1.2vw, 12px)',
                             minWidth: '45px',
                             marginRight: '10px',
                         }}
@@ -44,8 +44,8 @@ export default function PICList({ projectName }: { projectName: string }) {
                             backgroundColor: 'rgba(255,255,255,0.95)',
                             color: '#1a1a1a',
                             padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: 'clamp(9px, 1vw, 11px)',
+                            borderRadius: '15px',
+                            fontSize: 'clamp(15px, 1vw, 11px)',
                             fontWeight: 'bold',
                             flex: 1,
                             textAlign: 'center',

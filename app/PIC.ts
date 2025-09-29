@@ -1,19 +1,96 @@
 export const PIC_MAP = {
-  "SENTUL RAQUET CLUB": {
-    ARCH: "Malazi",
-    INTR: "Aviva",
+  "PRAPANCA PADEL COURT ROOM": {
+    ARCH: "-",
+    INTR: "-",
+    DRFT: "-",
+    PM: "-",
+    PGWS: "-",
+  },
+  "SENTUL WELLNESS CENTER": {
+    ARCH: "Maladzi",
+    INTR: "Biba",
     DRFT: "Aldi",
-    PM: "Pak Dar",
-    PGWS: "Ujang",
+    PM: "-",
+    PGWS: "-",
   },
-  "Project Lain": {
-    ARCH: "Budi",
-    INTR: "Sinta",
-    DRFT: "Rizal",
-    PM: "Andi",
-    PGWS: "Tono",
+  "JOGJA SPORT CENTER": {
+    ARCH: "Wahyu",
+    INTR: "Welia",
+    DRFT: "-",
+    PM: "-",
+    PGWS: "-",
   },
-} as const;
+  "WELLNESS & LIFESTYLE PIK 1": {
+    ARCH: "Maladzi",
+    INTR: "Biba",
+    DRFT: "Aldy",
+    PM: "-",
+    PGWS: "-",
+  },
+  "PRESTIGE PADEL": {
+    ARCH: "-",
+    INTR: "-",
+    DRFT: "-",
+    PM: "-",
+    PGWS: "Nassar",
+  },
+  "PADELIO 2": {
+    ARCH: "Wahyu",
+    INTR: "Welia",
+    DRFT: "Aldi",
+    PM: "-",
+    PGWS: "Fahrezi Abdad",
+  },
+  "PADELIO": {
+    ARCH: "Wahyu",
+    INTR: "Welia",
+    DRFT: "Aldi",
+    PM: "-",
+    PGWS: "Fahrezi Abdad",
+  },
+  "OSSO": {
+    ARCH: "Juita",
+    INTR: "Biba",
+    DRFT: "Aldi",
+    PM: "-",
+    PGWS: "Boy",
+  },
+  "INTERIOR LAKESIDE 112": {
+    ARCH: "Wahyu",
+    INTR: "Sonia",
+    DRFT: "Danu",
+    PM: "-",
+    PGWS: "Farhat",
+  },
+  "LITTLE SINBAD": {
+    ARCH: "-",
+    INTR: "-",
+    DRFT: "-",
+    PM: "-",
+    PGWS: "-",
+  },
+  "VRDE VILLA DUTA": {
+    ARCH: "Wahyu",
+    INTR: "Welia",
+    DRFT: "Aldi",
+    PM: "-",
+    PGWS: "Salim",
+  },
+  "AP HOUSE": {
+    ARCH: "Juita",
+    INTR: "Sonia",
+    DRFT: "Aldi",
+    PM: "-",
+    PGWS: "Farhat",
+  },
+  "MR. HERU'S HOUSE": {
+    ARCH: "Zahra",
+    INTR: "Sonia",
+    DRFT: "Danu",
+    PM: "-",
+    PGWS: "Piye",
+  },
 
+} as const;
 export type ProjectName = keyof typeof PIC_MAP;
 export type ProjectPIC = typeof PIC_MAP[ProjectName];

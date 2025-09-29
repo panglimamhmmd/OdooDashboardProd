@@ -24,12 +24,12 @@
             'project.project', // model
             'search_read', // method
             [ 
-                [["stage_id", "!=", 4]]
+                [["stage_id", "!=", 4] , ["name", "!=", "Internal"] ,["name", "!=", "Padelio"] ]
             ], // domain (empty)
             {
               fields: ['id', 'name' ,  "tag_ids" ,"x_progress_project" , "date_start" , "date" ],
-              limit: 10,
-              "order": "create_date desc"
+              limit: 100,
+              "order": "create_date asc"
             }
           ]
         },
@@ -52,8 +52,8 @@
 
       const dataProject= data.result;
       const tagMap : any = {
-        1: "Interior",
-        2: "Construction",
+        1: "Construction",
+        2: "Interior" ,
         3: "Design"
       };
       const grouped = dataProject.reduce((acc: any, item: any) => {
@@ -85,7 +85,7 @@
       // Ubah object ke array biar lebih gampang dipakai
       const result = Object.values(grouped);
     
-      // console.dir({result} , {depth: null})
+      // console.dir({result} , {depth: null})  
 
 
       // Check for JSON-RPC error
