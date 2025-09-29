@@ -120,7 +120,8 @@ export default function Home() {
     };
 
     const getRandomPIC = (category: string): string => {
-        const pics = dummyPICs[category] || dummyPICs['P.M.'];
+        const pics =
+            dummyPICs[category as keyof typeof dummyPICs] || dummyPICs['P.M.'];
         return pics[Math.floor(Math.random() * pics.length)];
     };
 
@@ -417,16 +418,16 @@ export default function Home() {
                             Main Projects
                         </CardTitle>
                         <div className="flex gap-2">
-                            <button
+                            {/* <button
                                 onClick={() => {
-                                    const newMode: ViewMode =
+                                    const newMode =
                                         viewMode === 'grid' ? 'list' : 'grid';
-                                    setViewMode(newMode);
+                                    setViewMode(newMode as 'grid' | 'list');
                                 }}
                                 className="px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             >
                                 Grid View
-                            </button>
+                            </button> */}
                             <button
                                 onClick={handleRefresh}
                                 disabled={loading}
