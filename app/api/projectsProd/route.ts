@@ -1,4 +1,7 @@
   import { NextRequest, NextResponse } from 'next/server';
+  
+  export const revalidate = 0;
+  export const dynamic = 'force-dynamic';
 
   export async function GET() {
     try {
@@ -42,6 +45,7 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        cache: 'no-store',
       });
 
       if (!response.ok) {
