@@ -372,7 +372,7 @@ export default function LiteLearningDashboard() {
                                     <div
                                         style={{
                                             background: 'black',
-                                            padding: '6px',
+                                            padding: '3px',
                                             textAlign: 'center',
                                             position: 'relative',
                                             height: '70px', // Fixed height untuk 2 baris
