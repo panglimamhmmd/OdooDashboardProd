@@ -254,7 +254,7 @@ export default function LiteLearningDashboard() {
                         style={{
                             display: 'grid',
                             gridTemplateColumns:
-                                'repeat(auto-fit, minmax(280px, 1fr))',
+                                'repeat(auto-fit, minmax(100px, 1fr))',
                             gap: '5px',
                             marginBottom: '5px',
                             maxWidth: '100%',
