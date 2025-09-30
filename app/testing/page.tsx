@@ -439,7 +439,7 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     background: 'black',
                                                     padding: '15px 14px',
-                                                    marginTop: '2px',
+                                                    marginTop: '5px',
                                                     textAlign: 'center',
                                                 }}
                                             >
@@ -517,7 +517,7 @@ export default function LiteLearningDashboard() {
                                             <div
                                                 style={{
                                                     flex: 1,
-                                                    padding: '20px',
+                                                    padding: '10px 20px',
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     justifyContent: 'center',
@@ -545,7 +545,7 @@ export default function LiteLearningDashboard() {
                                                 style={{
                                                     background: 'black',
                                                     padding: '15px 14px',
-                                                    marginTop: 'auto',
+                                                    marginTop: '20px',
                                                     textAlign: 'center',
                                                 }}
                                             >
