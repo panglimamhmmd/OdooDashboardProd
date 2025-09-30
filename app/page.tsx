@@ -31,7 +31,6 @@ export default function LiteLearningDashboard() {
     const [projects, setProjects] = useState<MainProject[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [showRawData, setShowRawData] = useState<boolean>(false);
 
     // ========== DATA FETCHING SIMULATION ==========
     const fetchProjects = async () => {

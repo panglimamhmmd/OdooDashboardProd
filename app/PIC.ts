@@ -9,7 +9,7 @@ export const PIC_MAP = {
   "SENTUL WELLNESS CENTER": {
     ARCH: "Maladzi",
     INTR: "Biba",
-    DRFT: "Aldi",
+    DRFT: "Rifky",
     PM: "-",
     PGWS: "-",
   },
@@ -72,14 +72,14 @@ export const PIC_MAP = {
   "VRDE VILLA DUTA": {
     ARCH: "Wahyu",
     INTR: "Welia",
-    DRFT: "Aldi",
+    DRFT: "Rifky",
     PM: "-",
     PGWS: "Salim",
   },
   "AP HOUSE": {
     ARCH: "Juita",
     INTR: "Sonia",
-    DRFT: "Aldi",
+    DRFT: "Rifky",
     PM: "-",
     PGWS: "Farhat",
   },

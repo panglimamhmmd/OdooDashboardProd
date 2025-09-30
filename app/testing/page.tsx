@@ -1,16 +1,16 @@
 'use client';
-import PICList from '@/components/ui/PIC';
 
+import PICList from '@/components/ui/PIC';
 import { useState, useEffect } from 'react';
 
-// ========== INTERFACES (Data Structure) ==========
+// ========== INTERFACES ==========
 interface SubProject {
     id: number;
     code: string;
     division: string;
-    progress: number; // 0.0 to 1.0
-    start_date: string; // ISO date string
-    deadline: string; // ISO date string
+    progress: number;
+    start_date: string;
+    deadline: string;
 }
 
 interface MainProject {
@@ -24,672 +24,626 @@ interface ApiResponse {
     error?: string;
 }
 
-// ========== DUMMY DATA FOR LEARNING ==========
-const DUMMY_API_RESPONSE: ApiResponse = {
-    success: true,
-    projects: [
-        {
-            main_project: 'PADEL REMPOA',
-            sub_projects: [
-                {
-                    id: 1,
-                    code: 'S001',
-                    division: 'Design',
-                    progress: 0.88,
-                    start_date: '2023-01-01',
-                    deadline: '2023-12-31',
-                },
-                {
-                    id: 2,
-                    code: 'S002',
-                    division: 'Construction',
-                    progress: 0.52,
-                    start_date: '2023-01-01',
-                    deadline: '2023-12-31',
-                },
-                {
-                    id: 3,
-                    code: 'S003',
-                    division: 'Interior',
-                    progress: 0.17,
-                    start_date: '2023-01-01',
-                    deadline: '2023-12-31',
-                },
-            ],
-        },
-        {
-            main_project: 'WELLNESS PIK',
-            sub_projects: [
-                {
-                    id: 4,
-                    code: 'S004',
-                    division: 'Design',
-                    progress: 0.95,
-                    deadline: '2023-12-31',
-                    start_date: '2023-01-01',
-                },
-                {
-                    id: 5,
-                    code: 'S005',
-                    division: 'Construction',
-                    progress: 0.73,
-                    deadline: '2023-12-31',
-                    start_date: '2023-01-01',
-                },
-                // Note: Tidak ada Interior project
-            ],
-        },
-        {
-            main_project: 'LSP MUI',
-            sub_projects: [
-                {
-                    id: 6,
-                    code: 'S006',
-                    division: 'Interior',
-                    progress: 0.35,
-                    deadline: '2023-12-31',
-                    start_date: '2023-01-01',
-                },
-                // Note: Hanya ada Interior project
-            ],
-        },
-    ],
-};
-
 export default function LiteLearningDashboard() {
-    // ========== STATE MANAGEMENT ==========
     const [projects, setProjects] = useState<MainProject[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [showRawData, setShowRawData] = useState<boolean>(false);
+    const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+    const [autoRotateEnabled, setAutoRotateEnabled] = useState<boolean>(false);
+    const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
-    // ========== DATA FETCHING SIMULATION ==========
+    // ========== UTILITY FUNCTIONS ==========
+    const findByDivision = (
+        subProjects: SubProject[],
+        division: string,
+        field: 'progress' | 'deadline' | 'start_date'
+    ) => {
+        const found = subProjects.find(
+            (p) => p.division.toLowerCase() === division.toLowerCase()
+        );
+        if (!found) return field === 'progress' ? 0 : 'N/A';
+        return field === 'progress' ? found.progress * 100 : found[field];
+    };
+
+    const calcTimeProgress = (startDate: string, deadline: string): number => {
+        if (startDate === 'N/A' || deadline === 'N/A') return 0;
+        const now = new Date().getTime();
+        const start = new Date(startDate).getTime();
+        const end = new Date(deadline).getTime();
+        return Math.min(
+            100,
+            Math.max(0, Math.round(((now - start) / (end - start)) * 100))
+        );
+    };
+
+    const getProgressStatus = (progress: number, timeProgress: number) => {
+        if (progress >= timeProgress + 10)
+            return { color: '#22c55e', status: 'ahead' };
+        if (progress < timeProgress - 10)
+            return { color: '#f87171', status: 'behind' };
+        return { color: 'white', status: 'ontrack' };
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString || dateString === 'N/A') return '13 NOV 2025';
+        return new Date(dateString)
+            .toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+            })
+            .replace('.', '')
+            .toUpperCase();
+    };
+
+    const calculateTotalProgress = (subProjects: SubProject[]): number => {
+        if (subProjects.length === 0) return 0;
+        const total = subProjects.reduce((sum, p) => sum + p.progress, 0);
+        return (total / subProjects.length) * 100;
+    };
+
+    // ========== FLIP HANDLER ==========
+    const handleCardFlip = (index: number) => {
+        setFlippedCards((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
+    };
+
+    // ========== DATA FETCHING ==========
     const fetchProjects = async () => {
-        console.log('🚀 Starting API call...');
         setLoading(true);
         setError(null);
 
         try {
-            // Simulasi network delay
-            console.log('⏳ Simulating network delay...');
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-
-            // Simulasi API call
-            // console.log('📡 Fetching data from API...');
-
-            // Di real app, ini akan jadi:
-            const response = await fetch('/api/projects');
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            const response = await fetch('/api/projectsProd');
             const data = await response.json();
 
-            // const data = DUMMY_API_RESPONSE;
-            console.log('📦 Raw API Response:', data);
-
             if (data.success) {
-                console.log('✅ API call successful');
-                console.log(
-                    '📊 Number of projects received:',
-                    data.projects.length
-                );
-
-                // Set data ke state
                 setProjects(data.projects);
-
-                // Log setiap project untuk pembelajaran
-                data.projects.forEach((project: MainProject, index: number) => {
-                    console.log(
-                        `📋 Project ${index + 1}: ${project.main_project}`
-                    );
-                    console.log(
-                        `   └── Sub-projects: ${project.sub_projects.length}`
-                    );
-                    project.sub_projects.forEach((sub) => {
-                        console.log(
-                            `       └── ${sub.division}: ${(
-                                sub.progress * 100
-                            ).toFixed(1)}%`
-                        );
-                    });
-                });
             } else {
                 throw new Error(data.error || 'API returned error');
             }
         } catch (err) {
-            console.error('❌ Error occurred:', err);
+            console.error('Error occurred:', err);
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
-            console.log('🏁 API call completed');
         }
     };
 
-    // ========== DATA PROCESSING FUNCTIONS ==========
-
-    // Function untuk cari progress berdasarkan division
-    const findProgressByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): number => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-        const result = found ? found.progress * 100 : 0;
-        return result;
-    };
-
-    const findDeadlineByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): string => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-        const result = found ? found.deadline : 'N/A';
-        return result;
-    };
-
-    const findStartDateByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): string => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-
-        const result = found ? found.start_date : 'N/A';
-        return result;
-    };
-
-    // Function untuk hitung total progress semua division
-    const calculateTotalProgress = (subProjects: SubProject[]): number => {
-        if (subProjects.length === 0) return 0;
-
-        const total = subProjects.reduce((sum, project) => {
-            console.log(`   Adding ${project.division}: ${project.progress}`);
-            return sum + project.progress;
-        }, 0);
-
-        const average = (total / subProjects.length) * 100;
-        console.log(`   Total average: ${average.toFixed(1)}%`);
-        return average;
-    };
-
-    // Function untuk mapping data ke format yang diinginkan
     const mapProjectsToDisplay = (rawProjects: MainProject[]) => {
-        console.log('🔄 Mapping projects for display...');
-
         return rawProjects.map((project, index) => {
-            console.log(`\n📋 Processing: ${project.main_project}`);
-
-            const designProgress = findProgressByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionProgress = findProgressByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorProgress = findProgressByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const designDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const designStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const totalProgress = calculateTotalProgress(project.sub_projects);
-
-            const mapped = {
+            const divisions = ['Design', 'Construction', 'Interior'];
+            const mapped: any = {
                 index: index + 1,
                 name: project.main_project,
-                design: designProgress,
-                construction: constructionProgress,
-                interior: interiorProgress,
-                total: totalProgress,
+                total: calculateTotalProgress(project.sub_projects),
                 subProjectCount: project.sub_projects.length,
-                designDeadline,
-                constructionDeadline,
-                interiorDeadline,
-                designStartDate,
-                constructionStartDate,
-                interiorStartDate,
-                rawData: project, // Keep original for reference
+                rawData: project,
             };
+
+            divisions.forEach((div) => {
+                const key = div.toLowerCase();
+                mapped[key] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'progress'
+                );
+                mapped[`${key}Deadline`] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'deadline'
+                );
+                mapped[`${key}StartDate`] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'start_date'
+                );
+            });
+
             return mapped;
         });
     };
 
-    // ========== LIFECYCLE ==========
     useEffect(() => {
-        console.log('🏗️ Component mounted, fetching initial data...');
         fetchProjects();
     }, []);
 
-    // ========== RENDER FUNCTIONS ==========
+    // ========== AUTO ROTATE EFFECT ==========
+    useEffect(() => {
+        if (!autoRotateEnabled || projects.length === 0) return;
 
-    const renderRawData = () => (
-        <div
-            style={{
-                marginTop: '20px',
-                padding: '20px',
-                backgroundColor: '#f5f5f5',
-                border: '1px solid #ddd',
-            }}
-        >
-            <h3>🔍 Raw API Data (untuk pembelajaran)</h3>
-            <pre
-                style={{
-                    backgroundColor: '#000',
-                    color: '#0f0',
-                    padding: '15px',
-                    fontSize: '12px',
-                    overflow: 'auto',
-                    maxHeight: '400px',
-                }}
-            >
-                {JSON.stringify(projects, null, 2)}
-            </pre>
-        </div>
-    );
+        const interval = setInterval(() => {
+            // Clear semua card yang lagi flip, terus flip 2 card baru
+            setFlippedCards(() => {
+                const newSet = new Set<number>();
+
+                // Hitung 2 card yang akan di-flip (1-based indexing)
+                const firstCard = (currentCardIndex % projects.length) + 1;
+                const secondCard =
+                    ((currentCardIndex + 1) % projects.length) + 1;
+
+                // Flip 2 card ini
+                newSet.add(firstCard);
+                newSet.add(secondCard);
+
+                return newSet;
+            });
+
+            // Update index, loncat 2 card
+            setCurrentCardIndex((prev) => (prev + 2) % projects.length);
+        }, 6000); // 6000ms = 6 detik
+
+        return () => clearInterval(interval);
+    }, [autoRotateEnabled, projects.length, currentCardIndex]);
 
     const renderProcessedData = () => {
-        console.log('\n🎨 Rendering processed data...');
         const mappedProjects = mapProjectsToDisplay(projects);
+        const projectChunks = [];
+        for (let i = 0; i < mappedProjects.length; i += 7) {
+            projectChunks.push(mappedProjects.slice(i, i + 7));
+        }
 
         return (
-            <div style={{ marginTop: '20px' }}>
-                <h3>📊 Processed Data (Hasil Mapping)</h3>
-                <table
-                    border={1}
-                    style={{ width: '100%', borderCollapse: 'collapse' }}
-                >
-                    <thead style={{ backgroundColor: '#e0e0e0' }}>
-                        <tr>
-                            <th style={{ padding: '10px' }}>No</th>
-                            <th style={{ padding: '10px' }}>Project Name</th>
-                            <th style={{ padding: '10px' }}>Design %</th>
-                            <th style={{ padding: '10px' }}>Construction %</th>
-                            <th style={{ padding: '10px' }}>Interior %</th>
-                            <th style={{ padding: '10px' }}>Average %</th>
+            <div
+                style={{ marginTop: '5px', padding: '1px', minHeight: '100vh' }}
+            >
+                {projectChunks.map((chunk, rowIndex) => (
+                    <div
+                        key={rowIndex}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(70px, 1fr))',
+                            gap: '5px',
+                            marginBottom: '5px',
+                            maxWidth: '100%',
+                        }}
+                    >
+                        {chunk.map((project) => {
+                            const isFlipped = flippedCards.has(project.index);
+                            const phases = [
+                                { name: 'design', label: 'DESIGN' },
+                                { name: 'construction', label: 'SIPIL' },
+                                { name: 'interior', label: 'INTERIOR' },
+                            ];
 
-                            <th style={{ padding: '10px' }}>Sub Projects</th>
-                            <th style={{ padding: '10px' }}>Deadline Design</th>
-                            <th style={{ padding: '10px' }}>
-                                Deadline Construction
-                            </th>
-                            <th style={{ padding: '10px' }}>
-                                Deadline Interior
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {mappedProjects.map((project) => (
-                            <tr key={project.index}>
-                                <td
+                            return (
+                                <div
+                                    key={project.index}
                                     style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
+                                        perspective: '500px',
+                                        minHeight: '350px',
                                     }}
+                                    onClick={() =>
+                                        handleCardFlip(project.index)
+                                    }
                                 >
-                                    {project.index}
-                                </td>
-                                <td style={{ padding: '10px' }}>
-                                    {project.name}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    {project.design.toFixed(1)}%
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    {project.construction.toFixed(1)}%
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    {project.interior.toFixed(1)}%
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                        backgroundColor:
-                                            project.total > 50
-                                                ? '#d4edda'
-                                                : '#f8d7da',
-                                    }}
-                                >
-                                    {project.total.toFixed(1)}%
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    {project.subProjectCount}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    Start: {project.designStartDate || ''}{' '}
-                                    <br />
-                                    End {project.designDeadline || ''}
-                                    <br />
-                                    <div className="relative w-full h-4 bg-gray-200 rounded">
-                                        {/* Time progress (belakang) */}
+                                    <div
+                                        style={{
+                                            position: 'relative',
+                                            width: '100%',
+                                            height: '100%',
+                                            minHeight: '300px',
+                                            transition: 'transform 0.6s',
+                                            transformStyle: 'preserve-3d',
+                                            transform: isFlipped
+                                                ? 'rotateY(180deg)'
+                                                : 'rotateY(0deg)',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        {/* FRONT SIDE - Progress */}
                                         <div
-                                            className="absolute top-0 left-0 h-4 bg-gray-400 rounded"
                                             style={{
-                                                width: `${Math.min(
-                                                    100,
-                                                    Math.max(
-                                                        0,
-                                                        Math.round(
-                                                            ((new Date().getTime() -
-                                                                new Date(
-                                                                    project.designStartDate
-                                                                ).getTime()) /
-                                                                (new Date(
-                                                                    project.designDeadline
-                                                                ).getTime() -
-                                                                    new Date(
-                                                                        project.designStartDate
-                                                                    ).getTime())) *
-                                                                100
-                                                        )
-                                                    )
-                                                )}%`,
+                                                position: 'absolute',
+                                                width: '100%',
+                                                height: '100%',
+                                                backfaceVisibility: 'hidden',
+                                                backgroundColor: 'black',
+                                                borderRadius: '16px',
+                                                overflow: 'hidden',
+                                                boxShadow:
+                                                    '0 4px 20px rgba(0,0,0,0.08)',
+                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
                                             }}
-                                        ></div>
+                                        >
+                                            {/* Header */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '3px',
+                                                    textAlign: 'center',
+                                                    height: '70px',
+                                                    lineHeight: '1.2',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(22px, 1.8vw, 18px)',
+                                                        fontWeight: '600',
+                                                        color: 'white',
+                                                        letterSpacing: '0.5px',
+                                                        lineHeight: '1.3',
+                                                        margin: '10px 4px',
+                                                    }}
+                                                >
+                                                    {project.name.toUpperCase()}
+                                                </div>
+                                            </div>
 
-                                        {/* Project progress (depan) */}
+                                            {/* Progress Section */}
+                                            <div
+                                                style={{
+                                                    padding: '0px  20px',
+                                                    // flex: 1,
+                                                }}
+                                            >
+                                                {phases.map(
+                                                    ({ name, label }) => {
+                                                        const progress =
+                                                            project[name];
+                                                        const timeProgress =
+                                                            calcTimeProgress(
+                                                                project[
+                                                                    `${name}StartDate`
+                                                                ],
+                                                                project[
+                                                                    `${name}Deadline`
+                                                                ]
+                                                            );
+                                                        const status =
+                                                            getProgressStatus(
+                                                                progress,
+                                                                timeProgress
+                                                            );
+
+                                                        return (
+                                                            <div
+                                                                key={name}
+                                                                style={{
+                                                                    marginBottom:
+                                                                        '3px',
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        display:
+                                                                            'flex',
+                                                                        justifyContent:
+                                                                            'space-between',
+                                                                        alignItems:
+                                                                            'center',
+                                                                        marginBottom:
+                                                                            '8px',
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            display:
+                                                                                'flex',
+                                                                            alignItems:
+                                                                                'center',
+                                                                        }}
+                                                                    >
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    'clamp(18px, 2.5vw, 24px)',
+                                                                                fontWeight:
+                                                                                    '700',
+                                                                                color: status.color,
+                                                                                minWidth:
+                                                                                    '55px',
+                                                                            }}
+                                                                        >
+                                                                            {progress.toFixed(
+                                                                                0
+                                                                            )}
+                                                                            %
+                                                                        </span>
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    'clamp(20px, 1.3vw, 14px)',
+                                                                                fontWeight:
+                                                                                    '600',
+                                                                                marginLeft:
+                                                                                    '12px',
+                                                                                color: 'white',
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize:
+                                                                                'clamp(8px, 0.9vw, 10px)',
+                                                                            color: status.color,
+                                                                            fontWeight:
+                                                                                '600',
+                                                                            textTransform:
+                                                                                'uppercase',
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            status.status
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        position:
+                                                                            'relative',
+                                                                        width: '100%',
+                                                                        height: '18px',
+                                                                        backgroundColor:
+                                                                            'black',
+                                                                        borderRadius:
+                                                                            '4px',
+                                                                        overflow:
+                                                                            'hidden',
+                                                                        border: '1px solid #e2e8f0',
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            position:
+                                                                                'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            height: '100%',
+                                                                            backgroundColor:
+                                                                                '#e2e8f0',
+                                                                            width: `${timeProgress}%`,
+                                                                            transition:
+                                                                                'width 0.3s ease',
+                                                                        }}
+                                                                    ></div>
+                                                                    <div
+                                                                        style={{
+                                                                            position:
+                                                                                'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            height: '100%',
+                                                                            backgroundColor:
+                                                                                status.color,
+                                                                            width: `${progress}%`,
+                                                                            transition:
+                                                                                'width 0.3s ease',
+                                                                        }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+
+                                            {/* Bottom - BAST */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '15px 14px',
+                                                    marginTop: '2px',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        color: 'white',
+                                                        fontWeight: '600',
+                                                        fontSize:
+                                                            'clamp(11px, 1.3vw, 14px)',
+                                                        letterSpacing: '0.5px',
+                                                    }}
+                                                >
+                                                    BAST :{' '}
+                                                    {formatDate(
+                                                        project.interiorDeadline
+                                                    )}
+                                                </div>
+                                                {/* <div
+                                                    style={{
+                                                        color: 'rgba(255,255,255,0.5)',
+                                                        fontSize:
+                                                            'clamp(9px, 1vw, 11px)',
+                                                        marginTop: '8px',
+                                                    }}
+                                                >
+                                                    Click to see PIC
+                                                </div> */}
+                                            </div>
+                                        </div>
+
+                                        {/* BACK SIDE - PIC */}
                                         <div
-                                            className="absolute top-0 left-0 h-4 bg-green-500 rounded"
                                             style={{
-                                                width: `${project.design}%`,
+                                                position: 'absolute',
+                                                width: '100%',
+                                                height: '100%',
+                                                backfaceVisibility: 'hidden',
+                                                backgroundColor: 'black',
+                                                borderRadius: '16px',
+                                                overflow: 'hidden',
+                                                boxShadow:
+                                                    '0 4px 20px rgba(0,0,0,0.08)',
+                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                transform: 'rotateY(180deg)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
                                             }}
-                                        ></div>
+                                        >
+                                            {/* Header */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '3px',
+                                                    textAlign: 'center',
+                                                    height: '70px',
+                                                    lineHeight: '1.2',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(22px, 1.8vw, 18px)',
+                                                        fontWeight: '600',
+                                                        color: 'white',
+                                                        letterSpacing: '0.5px',
+                                                        lineHeight: '1.3',
+                                                        margin: '10px 4px',
+                                                    }}
+                                                >
+                                                    {project.name.toUpperCase()}
+                                                </div>
+                                            </div>
+
+                                            {/* PIC Content */}
+                                            <div
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '20px',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    justifyContent: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        color: 'white',
+                                                        fontSize:
+                                                            'clamp(16px, 1.5vw, 18px)',
+                                                        fontWeight: '600',
+                                                        marginBottom: '20px',
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    Person In Charge
+                                                </div>
+                                                <PICList
+                                                    projectName={project.name}
+                                                />
+                                            </div>
+
+                                            {/* Bottom */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '15px 14px',
+                                                    marginTop: 'auto',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        color: 'rgba(255,255,255,0.5)',
+                                                        fontSize:
+                                                            'clamp(9px, 1vw, 11px)',
+                                                    }}
+                                                >
+                                                    Click to see Progress
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    Start: {project.constructionStartDate || ''}{' '}
-                                    <br />
-                                    End {project.constructionDeadline || ''}
-                                    <br />
-                                    <div className="relative w-full h-4 bg-gray-200 rounded">
-                                        {/* Time progress (belakang) */}
-                                        <div
-                                            className="absolute top-0 left-0 h-4 bg-gray-400 rounded"
-                                            style={{
-                                                width: `${Math.min(
-                                                    100,
-                                                    Math.max(
-                                                        0,
-                                                        Math.round(
-                                                            ((new Date().getTime() -
-                                                                new Date(
-                                                                    project.constructionStartDate
-                                                                ).getTime()) /
-                                                                (new Date(
-                                                                    project.constructionDeadline
-                                                                ).getTime() -
-                                                                    new Date(
-                                                                        project.constructionStartDate
-                                                                    ).getTime())) *
-                                                                100
-                                                        )
-                                                    )
-                                                )}%`,
-                                            }}
-                                        ></div>
+                                </div>
+                            );
+                        })}
 
-                                        {/* Project progress (depan) */}
-                                        <div
-                                            className="absolute top-0 left-0 h-4 bg-green-500 rounded"
-                                            style={{
-                                                width: `${project.construction}%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                </td>
-                                <td
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    Start: {project.interiorStartDate || ''}{' '}
-                                    <br />
-                                    End {project.interiorDeadline || ''}
-                                    <br />
-                                    <div className="relative w-full h-4 bg-gray-200 rounded">
-                                        {/* Time progress (belakang) */}
-                                        <div
-                                            className="absolute top-0 left-0 h-4 bg-gray-400 rounded"
-                                            style={{
-                                                width: `${Math.min(
-                                                    100,
-                                                    Math.max(
-                                                        0,
-                                                        Math.round(
-                                                            ((new Date().getTime() -
-                                                                new Date(
-                                                                    project.interiorStartDate
-                                                                ).getTime()) /
-                                                                (new Date(
-                                                                    project.interiorDeadline
-                                                                ).getTime() -
-                                                                    new Date(
-                                                                        project.interiorStartDate
-                                                                    ).getTime())) *
-                                                                100
-                                                        )
-                                                    )
-                                                )}%`,
-                                            }}
-                                        ></div>
-
-                                        {/* Project progress (depan) */}
-                                        <div
-                                            className="absolute top-0 left-0 h-4 bg-green-500 rounded"
-                                            style={{
-                                                width: `${project.interior}%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                </td>
-
-                                {/* progress bar desain */}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        {Array.from(
+                            { length: 7 - chunk.length },
+                            (_, index) => (
+                                <div
+                                    key={`empty-${index}`}
+                                    style={{ visibility: 'hidden' }}
+                                ></div>
+                            )
+                        )}
+                    </div>
+                ))}
             </div>
         );
     };
 
-    // ========== MAIN RENDER ==========
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-            <h1>🎓 Lite Learning Dashboard</h1>
-            <p>
-                <em>
-                    Fokus pada data structure dan mapping - UI sederhana untuk
-                    pembelajaran
-                </em>
-            </p>
-
-            {/* Controls */}
+        <div style={{ padding: '0px', fontFamily: 'Arial, sans-serif' }}>
+            {/* Auto Rotate Toggle */}
             <div
                 style={{
-                    marginBottom: '20px',
-                    padding: '15px',
-                    backgroundColor: '#f0f8ff',
-                    border: '1px solid #add8e6',
+                    position: 'fixed',
+                    left: '20px',
+                    bottom: '20px',
+                    zIndex: 1000,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: '10px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
                 }}
             >
-                <h3>🎛️ Controls</h3>
-                <button
-                    onClick={fetchProjects}
-                    disabled={loading}
+                <label
                     style={{
-                        padding: '10px 20px',
-                        marginRight: '10px',
-                        backgroundColor: loading ? '#cccccc' : '#007bff',
                         color: 'white',
-                        border: 'none',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                    }}
-                >
-                    {loading ? '⏳ Loading...' : '🔄 Refresh Data'}
-                </button>
-
-                <button
-                    onClick={() => setShowRawData(!showRawData)}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: showRawData ? '#dc3545' : '#28a745',
-                        color: 'white',
-                        border: 'none',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
                         cursor: 'pointer',
                     }}
                 >
-                    {showRawData ? '👁️ Hide Raw Data' : '🔍 Show Raw Data'}
-                </button>
-
-                <button
-                    onClick={() => console.clear()}
-                    style={{
-                        padding: '10px 20px',
-                        marginLeft: '10px',
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        cursor: 'pointer',
-                    }}
-                >
-                    🧹 Clear Console
-                </button>
+                    <input
+                        type="checkbox"
+                        checked={autoRotateEnabled}
+                        onChange={(e) => setAutoRotateEnabled(e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                    />
+                    <span style={{ cursor: 'pointer' }}>Auto Rotate (6s)</span>
+                </label>
             </div>
 
-            {/* Status */}
-            <div
-                style={{
-                    marginBottom: '20px',
-                    padding: '15px',
-                    backgroundColor: '#fff3cd',
-                    border: '1px solid #ffeaa7',
-                }}
-            >
-                <h3>📊 Status</h3>
-                <p>
-                    <strong>Loading:</strong> {loading ? '✅ Yes' : '❌ No'}
-                </p>
-                <p>
-                    <strong>Error:</strong> {error || '❌ None'}
-                </p>
-                <p>
-                    <strong>Projects Count:</strong> {projects.length}
-                </p>
-                <p>
-                    <strong>Console:</strong> Buka Developer Tools (F12) untuk
-                    melihat log detail!
-                </p>
-            </div>
-
-            {/* Error Display */}
             {error && (
                 <div
                     style={{
-                        padding: '15px',
+                        padding: '0px',
                         backgroundColor: '#f8d7da',
                         border: '1px solid #f5c6cb',
-                        marginBottom: '20px',
+                        marginBottom: '0px',
                     }}
                 >
-                    <h3>❌ Error</h3>
+                    <h3>Error</h3>
                     <p>{error}</p>
                 </div>
             )}
 
-            {/* Raw Data */}
-            {showRawData && renderRawData()}
-
-            {/* Processed Data */}
             {!loading && !error && projects.length > 0 && renderProcessedData()}
 
-            {/* No Data */}
             {!loading && !error && projects.length === 0 && (
                 <div
                     style={{
-                        padding: '20px',
+                        padding: '0px',
                         textAlign: 'center',
                         backgroundColor: '#e2e3e5',
                         border: '1px solid #d1d3d4',
                     }}
                 >
-                    <h3>📭 No Data</h3>
-                    <p>Click Refresh Data 🔄 to load projects</p>
+                    <h3>No Data</h3>
+                    <p>Click Refresh Data to load projects</p>
                 </div>
             )}
-
-            {/* Learning Notes */}
-            <div
-                style={{
-                    marginTop: '40px',
-                    padding: '20px',
-                    backgroundColor: '#e7f3ff',
-                    border: '1px solid #b3d9ff',
-                }}
-            >
-                <h3>📚 Learning Points</h3>
-                <PICList projectName="Sentul Raquet Club" />
-            </div>
         </div>
     );
 }
