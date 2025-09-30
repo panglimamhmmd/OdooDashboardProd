@@ -65,7 +65,7 @@ export default function LiteLearningDashboard() {
     };
 
     const formatDate = (dateString: string) => {
-        if (!dateString || dateString === 'N/A') return '13 NOV 2025';
+        if (!dateString || dateString === 'N/A') return 'Date not set';
         return new Date(dateString)
             .toLocaleDateString('id-ID', {
                 day: '2-digit',
