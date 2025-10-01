@@ -29,7 +29,7 @@ export default function LiteLearningDashboard() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
-    const [autoRotateEnabled, setAutoRotateEnabled] = useState<boolean>(false);
+    const [autoRotateEnabled, setAutoRotateEnabled] = useState<boolean>(true);
     const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
     // ========== UTILITY FUNCTIONS ==========
@@ -57,6 +57,7 @@ export default function LiteLearningDashboard() {
     };
 
     const getProgressStatus = (progress: number, timeProgress: number) => {
+        if (progress === 100) return { color: '#22c55e', status: 'Done' };
         if (progress >= timeProgress + 10)
             return { color: '#22c55e', status: 'ahead' };
         if (progress < timeProgress - 10)
@@ -65,7 +66,7 @@ export default function LiteLearningDashboard() {
     };
 
     const formatDate = (dateString: string) => {
-        if (!dateString || dateString === 'N/A') return 'Date not set';
+        if (!dateString || dateString === 'N/A') return 'Date not';
         return new Date(dateString)
             .toLocaleDateString('id-ID', {
                 day: '2-digit',
@@ -151,9 +152,14 @@ export default function LiteLearningDashboard() {
             return mapped;
         });
     };
-
     useEffect(() => {
         fetchProjects();
+
+        const interval = setInterval(() => {
+            fetchProjects(); // Panggil fetchProjects lagi, bukan reload page
+        }, 60000); // 30 detik
+
+        return () => clearInterval(interval);
     }, []);
 
     // ========== AUTO ROTATE EFFECT ==========

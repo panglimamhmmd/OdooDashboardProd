@@ -18,7 +18,13 @@ export default function PICList({ projectName }: { projectName: string }) {
         );
 
     return (
-        <div style={{ marginBottom: '16px' }}>
+        <div
+            style={{
+                marginBottom: '16px',
+                fontFamily:
+                    '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            }}
+        >
             {Object.entries(projectPICs).map(([role, name]) => (
                 <div
                     key={role}
@@ -27,12 +33,14 @@ export default function PICList({ projectName }: { projectName: string }) {
                         alignItems: 'center',
                         marginBottom: '6px',
                         gap: '10px',
+                        fontFamily:
+                            '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                     }}
                 >
                     <span
                         style={{
-                            color: 'white',
-                            fontWeight: 'bold',
+                            color: 'White',
+                            fontWeight: '600',
                             fontSize: 'clamp(11px, 1.2vw, 20px)',
                             minWidth: '80px',
                             maxWidth: '120px',
@@ -52,7 +60,7 @@ export default function PICList({ projectName }: { projectName: string }) {
                             padding: '3px',
                             borderRadius: '10px',
                             fontSize: 'clamp(20px, 1vw, 15px)',
-                            fontWeight: 'bold',
+                            fontWeight: '600',
                             flex: 1,
                             textAlign: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',

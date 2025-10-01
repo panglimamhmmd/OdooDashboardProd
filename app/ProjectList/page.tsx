@@ -3,7 +3,6 @@
 import PICList from '@/components/ui/PIC';
 import { useState, useEffect } from 'react';
 
-// ========== INTERFACES ==========
 interface SubProject {
     id: number;
     code: string;
@@ -32,7 +31,6 @@ export default function LiteLearningDashboard() {
     const [autoRotateEnabled, setAutoRotateEnabled] = useState<boolean>(false);
     const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
-    // ========== UTILITY FUNCTIONS ==========
     const findByDivision = (
         subProjects: SubProject[],
         division: string,
@@ -58,22 +56,31 @@ export default function LiteLearningDashboard() {
 
     const getProgressStatus = (progress: number, timeProgress: number) => {
         if (progress >= timeProgress + 10)
-            return { color: '#22c55e', status: 'ahead' };
+            return {
+                color: '#34C759',
+                gradient: 'linear-gradient(135deg, #34C759 0%, #30D158 100%)',
+                status: 'ahead',
+            };
         if (progress < timeProgress - 10)
-            return { color: '#f87171', status: 'behind' };
-        return { color: 'white', status: 'ontrack' };
+            return {
+                color: '#FF3B30',
+                gradient: 'linear-gradient(135deg, #FF3B30 0%, #FF453A 100%)',
+                status: 'behind',
+            };
+        return {
+            color: '#007AFF',
+            gradient: 'linear-gradient(135deg, #007AFF 0%, #0A84FF 100%)',
+            status: 'on track',
+        };
     };
 
     const formatDate = (dateString: string) => {
-        if (!dateString || dateString === 'N/A') return '13 NOV 2025';
-        return new Date(dateString)
-            .toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            })
-            .replace('.', '')
-            .toUpperCase();
+        if (!dateString || dateString === 'N/A') return 'Not set';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
     };
 
     const calculateTotalProgress = (subProjects: SubProject[]): number => {
@@ -82,7 +89,6 @@ export default function LiteLearningDashboard() {
         return (total / subProjects.length) * 100;
     };
 
-    // ========== FLIP HANDLER ==========
     const handleCardFlip = (index: number) => {
         setFlippedCards((prev) => {
             const newSet = new Set(prev);
@@ -95,7 +101,6 @@ export default function LiteLearningDashboard() {
         });
     };
 
-    // ========== DATA FETCHING ==========
     const fetchProjects = async () => {
         setLoading(true);
         setError(null);
@@ -156,30 +161,21 @@ export default function LiteLearningDashboard() {
         fetchProjects();
     }, []);
 
-    // ========== AUTO ROTATE EFFECT ==========
     useEffect(() => {
         if (!autoRotateEnabled || projects.length === 0) return;
 
         const interval = setInterval(() => {
-            // Clear semua card yang lagi flip, terus flip 2 card baru
             setFlippedCards(() => {
                 const newSet = new Set<number>();
-
-                // Hitung 2 card yang akan di-flip (1-based indexing)
                 const firstCard = (currentCardIndex % projects.length) + 1;
                 const secondCard =
                     ((currentCardIndex + 1) % projects.length) + 1;
-
-                // Flip 2 card ini
                 newSet.add(firstCard);
                 newSet.add(secondCard);
-
                 return newSet;
             });
-
-            // Update index, loncat 2 card
             setCurrentCardIndex((prev) => (prev + 2) % projects.length);
-        }, 6000); // 6000ms = 6 detik
+        }, 6000);
 
         return () => clearInterval(interval);
     }, [autoRotateEnabled, projects.length, currentCardIndex]);
@@ -192,35 +188,40 @@ export default function LiteLearningDashboard() {
         }
 
         return (
-            <div
-                style={{ marginTop: '5px', padding: '1px', minHeight: '100vh' }}
-            >
+            <div style={{ padding: '20px', minHeight: '100vh' }}>
                 {projectChunks.map((chunk, rowIndex) => (
                     <div
                         key={rowIndex}
                         style={{
                             display: 'grid',
                             gridTemplateColumns:
-                                'repeat(auto-fit, minmax(70px, 1fr))',
-                            gap: '5px',
-                            marginBottom: '5px',
-                            maxWidth: '100%',
+                                'repeat(auto-fit, minmax(280px, 1fr))',
+                            gap: '20px',
+                            marginBottom: '20px',
                         }}
                     >
                         {chunk.map((project) => {
                             const isFlipped = flippedCards.has(project.index);
                             const phases = [
-                                { name: 'design', label: 'DESIGN' },
-                                { name: 'construction', label: 'SIPIL' },
-                                { name: 'interior', label: 'INTERIOR' },
+                                { name: 'design', label: 'Design', icon: '✏️' },
+                                {
+                                    name: 'construction',
+                                    label: 'Construction',
+                                    icon: '🏗️',
+                                },
+                                {
+                                    name: 'interior',
+                                    label: 'Interior',
+                                    icon: '🎨',
+                                },
                             ];
 
                             return (
                                 <div
                                     key={project.index}
                                     style={{
-                                        perspective: '500px',
-                                        minHeight: '350px',
+                                        perspective: '1000px',
+                                        minHeight: '400px',
                                     }}
                                     onClick={() =>
                                         handleCardFlip(project.index)
@@ -231,8 +232,9 @@ export default function LiteLearningDashboard() {
                                             position: 'relative',
                                             width: '100%',
                                             height: '100%',
-                                            minHeight: '300px',
-                                            transition: 'transform 0.6s',
+                                            minHeight: '400px',
+                                            transition:
+                                                'transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
                                             transformStyle: 'preserve-3d',
                                             transform: isFlipped
                                                 ? 'rotateY(180deg)'
@@ -240,57 +242,75 @@ export default function LiteLearningDashboard() {
                                             cursor: 'pointer',
                                         }}
                                     >
-                                        {/* FRONT SIDE - Progress */}
+                                        {/* FRONT SIDE */}
                                         <div
                                             style={{
                                                 position: 'absolute',
                                                 width: '100%',
                                                 height: '100%',
                                                 backfaceVisibility: 'hidden',
-                                                backgroundColor: 'black',
-                                                borderRadius: '16px',
+                                                background:
+                                                    'rgba(255, 255, 255, 0.7)',
+                                                backdropFilter:
+                                                    'blur(20px) saturate(180%)',
+                                                WebkitBackdropFilter:
+                                                    'blur(20px) saturate(180%)',
+                                                borderRadius: '20px',
                                                 overflow: 'hidden',
                                                 boxShadow:
-                                                    '0 4px 20px rgba(0,0,0,0.08)',
-                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                    '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                                                border: '1px solid rgba(255, 255, 255, 0.8)',
                                                 display: 'flex',
                                                 flexDirection: 'column',
+                                                transition: 'all 0.3s ease',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform =
+                                                    'translateY(-4px)';
+                                                e.currentTarget.style.boxShadow =
+                                                    '0 12px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform =
+                                                    'translateY(0)';
+                                                e.currentTarget.style.boxShadow =
+                                                    '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)';
                                             }}
                                         >
                                             {/* Header */}
                                             <div
                                                 style={{
-                                                    background: 'black',
-                                                    padding: '3px',
+                                                    background:
+                                                        'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
+                                                    padding: '24px 20px',
                                                     textAlign: 'center',
-                                                    height: '70px',
-                                                    lineHeight: '1.2',
+                                                    borderBottom:
+                                                        '1px solid rgba(0, 0, 0, 0.06)',
                                                 }}
                                             >
                                                 <div
                                                     style={{
                                                         fontSize:
-                                                            'clamp(22px, 1.8vw, 18px)',
+                                                            'clamp(18px, 2vw, 22px)',
                                                         fontWeight: '600',
-                                                        color: 'white',
-                                                        letterSpacing: '0.5px',
-                                                        lineHeight: '1.3',
-                                                        margin: '10px 4px',
+                                                        color: '#1d1d1f',
+                                                        letterSpacing: '-0.5px',
+                                                        lineHeight: '1.2',
                                                     }}
                                                 >
-                                                    {project.name.toUpperCase()}
+                                                    {project.name}
                                                 </div>
                                             </div>
 
                                             {/* Progress Section */}
                                             <div
                                                 style={{
-                                                    padding: '0px  20px',
-                                                    // flex: 1,
+                                                    padding: '24px 20px',
+                                                    flex: 1,
                                                 }}
                                             >
                                                 {phases.map(
-                                                    ({ name, label }) => {
+                                                    ({ name, label, icon }) => {
                                                         const progress =
                                                             project[name];
                                                         const timeProgress =
@@ -313,7 +333,7 @@ export default function LiteLearningDashboard() {
                                                                 key={name}
                                                                 style={{
                                                                     marginBottom:
-                                                                        '3px',
+                                                                        '20px',
                                                                 }}
                                                             >
                                                                 <div
@@ -325,7 +345,7 @@ export default function LiteLearningDashboard() {
                                                                         alignItems:
                                                                             'center',
                                                                         marginBottom:
-                                                                            '8px',
+                                                                            '10px',
                                                                     }}
                                                                 >
                                                                     <div
@@ -334,33 +354,28 @@ export default function LiteLearningDashboard() {
                                                                                 'flex',
                                                                             alignItems:
                                                                                 'center',
+                                                                            gap: '8px',
                                                                         }}
                                                                     >
-                                                                        <span
+                                                                        {/* <span
                                                                             style={{
                                                                                 fontSize:
-                                                                                    'clamp(18px, 2.5vw, 24px)',
-                                                                                fontWeight:
-                                                                                    '700',
-                                                                                color: status.color,
-                                                                                minWidth:
-                                                                                    '55px',
+                                                                                    '16px',
                                                                             }}
                                                                         >
-                                                                            {progress.toFixed(
-                                                                                0
-                                                                            )}
-                                                                            %
-                                                                        </span>
+                                                                            {
+                                                                                icon
+                                                                            }
+                                                                        </span> */}
                                                                         <span
                                                                             style={{
                                                                                 fontSize:
-                                                                                    'clamp(20px, 1.3vw, 14px)',
+                                                                                    '20px',
                                                                                 fontWeight:
                                                                                     '600',
-                                                                                marginLeft:
-                                                                                    '12px',
-                                                                                color: 'white',
+                                                                                color: '#1d1d1f',
+                                                                                letterSpacing:
+                                                                                    '-0.3px',
                                                                             }}
                                                                         >
                                                                             {
@@ -370,18 +385,44 @@ export default function LiteLearningDashboard() {
                                                                     </div>
                                                                     <div
                                                                         style={{
-                                                                            fontSize:
-                                                                                'clamp(8px, 0.9vw, 10px)',
-                                                                            color: status.color,
-                                                                            fontWeight:
-                                                                                '600',
-                                                                            textTransform:
-                                                                                'uppercase',
+                                                                            display:
+                                                                                'flex',
+                                                                            alignItems:
+                                                                                'center',
+                                                                            gap: '12px',
                                                                         }}
                                                                     >
-                                                                        {
-                                                                            status.status
-                                                                        }
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    '13px',
+                                                                                fontWeight:
+                                                                                    '600',
+                                                                                color: status.color,
+                                                                                textTransform:
+                                                                                    'capitalize',
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                status.status
+                                                                            }
+                                                                        </span>
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    '20px',
+                                                                                fontWeight:
+                                                                                    '700',
+                                                                                color: '#1d1d1f',
+                                                                                letterSpacing:
+                                                                                    '-0.5px',
+                                                                            }}
+                                                                        >
+                                                                            {progress.toFixed(
+                                                                                0
+                                                                            )}
+                                                                            %
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                                 <div
@@ -389,14 +430,13 @@ export default function LiteLearningDashboard() {
                                                                         position:
                                                                             'relative',
                                                                         width: '100%',
-                                                                        height: '18px',
+                                                                        height: '8px',
                                                                         backgroundColor:
-                                                                            'black',
+                                                                            'rgba(0, 0, 0, 0.06)',
                                                                         borderRadius:
-                                                                            '4px',
+                                                                            '10px',
                                                                         overflow:
                                                                             'hidden',
-                                                                        border: '1px solid #e2e8f0',
                                                                     }}
                                                                 >
                                                                     <div
@@ -406,25 +446,13 @@ export default function LiteLearningDashboard() {
                                                                             top: 0,
                                                                             left: 0,
                                                                             height: '100%',
-                                                                            backgroundColor:
-                                                                                '#e2e8f0',
-                                                                            width: `${timeProgress}%`,
-                                                                            transition:
-                                                                                'width 0.3s ease',
-                                                                        }}
-                                                                    ></div>
-                                                                    <div
-                                                                        style={{
-                                                                            position:
-                                                                                'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            height: '100%',
-                                                                            backgroundColor:
-                                                                                status.color,
+                                                                            background:
+                                                                                status.gradient,
                                                                             width: `${progress}%`,
+                                                                            borderRadius:
+                                                                                '10px',
                                                                             transition:
-                                                                                'width 0.3s ease',
+                                                                                'width 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
                                                                         }}
                                                                     ></div>
                                                                 </div>
@@ -434,55 +462,50 @@ export default function LiteLearningDashboard() {
                                                 )}
                                             </div>
 
-                                            {/* Bottom - BAST */}
+                                            {/* Footer */}
                                             <div
                                                 style={{
-                                                    background: 'black',
-                                                    padding: '15px 14px',
-                                                    marginTop: '2px',
+                                                    padding: '16px 20px',
+                                                    background:
+                                                        'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 100%)',
+                                                    borderTop:
+                                                        '1px solid rgba(0, 0, 0, 0.04)',
                                                     textAlign: 'center',
                                                 }}
                                             >
                                                 <div
                                                     style={{
-                                                        color: 'white',
-                                                        fontWeight: '600',
-                                                        fontSize:
-                                                            'clamp(11px, 1.3vw, 14px)',
-                                                        letterSpacing: '0.5px',
+                                                        fontSize: '13px',
+                                                        color: '#86868b',
+                                                        fontWeight: '500',
                                                     }}
                                                 >
-                                                    BAST :{' '}
+                                                    BAST:{' '}
                                                     {formatDate(
                                                         project.interiorDeadline
                                                     )}
                                                 </div>
-                                                {/* <div
-                                                    style={{
-                                                        color: 'rgba(255,255,255,0.5)',
-                                                        fontSize:
-                                                            'clamp(9px, 1vw, 11px)',
-                                                        marginTop: '8px',
-                                                    }}
-                                                >
-                                                    Click to see PIC
-                                                </div> */}
                                             </div>
                                         </div>
 
-                                        {/* BACK SIDE - PIC */}
+                                        {/* BACK SIDE */}
                                         <div
                                             style={{
                                                 position: 'absolute',
                                                 width: '100%',
                                                 height: '100%',
                                                 backfaceVisibility: 'hidden',
-                                                backgroundColor: 'black',
-                                                borderRadius: '16px',
+                                                background:
+                                                    'rgba(255, 255, 255, 0.7)',
+                                                backdropFilter:
+                                                    'blur(20px) saturate(180%)',
+                                                WebkitBackdropFilter:
+                                                    'blur(20px) saturate(180%)',
+                                                borderRadius: '20px',
                                                 overflow: 'hidden',
                                                 boxShadow:
-                                                    '0 4px 20px rgba(0,0,0,0.08)',
-                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                    '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                                                border: '1px solid rgba(255, 255, 255, 0.8)',
                                                 transform: 'rotateY(180deg)',
                                                 display: 'flex',
                                                 flexDirection: 'column',
@@ -491,25 +514,25 @@ export default function LiteLearningDashboard() {
                                             {/* Header */}
                                             <div
                                                 style={{
-                                                    background: 'black',
-                                                    padding: '3px',
+                                                    background:
+                                                        'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
+                                                    padding: '24px 20px',
                                                     textAlign: 'center',
-                                                    height: '70px',
-                                                    lineHeight: '1.2',
+                                                    borderBottom:
+                                                        '1px solid rgba(0, 0, 0, 0.06)',
                                                 }}
                                             >
                                                 <div
                                                     style={{
                                                         fontSize:
-                                                            'clamp(22px, 1.8vw, 18px)',
+                                                            'clamp(18px, 2vw, 22px)',
                                                         fontWeight: '600',
-                                                        color: 'white',
-                                                        letterSpacing: '0.5px',
-                                                        lineHeight: '1.3',
-                                                        margin: '10px 4px',
+                                                        color: '#1d1d1f',
+                                                        letterSpacing: '-0.5px',
+                                                        lineHeight: '1.2',
                                                     }}
                                                 >
-                                                    {project.name.toUpperCase()}
+                                                    {project.name}
                                                 </div>
                                             </div>
 
@@ -517,7 +540,7 @@ export default function LiteLearningDashboard() {
                                             <div
                                                 style={{
                                                     flex: 1,
-                                                    padding: '20px',
+                                                    padding: '30px 20px',
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     justifyContent: 'center',
@@ -525,38 +548,40 @@ export default function LiteLearningDashboard() {
                                             >
                                                 <div
                                                     style={{
-                                                        color: 'white',
-                                                        fontSize:
-                                                            'clamp(16px, 1.5vw, 18px)',
+                                                        color: '#1d1d1f',
+                                                        fontSize: '17px',
                                                         fontWeight: '600',
                                                         marginBottom: '20px',
                                                         textAlign: 'center',
+                                                        letterSpacing: '-0.3px',
                                                     }}
                                                 >
-                                                    Person In Charge
+                                                    Team Members
                                                 </div>
                                                 <PICList
                                                     projectName={project.name}
                                                 />
                                             </div>
 
-                                            {/* Bottom */}
+                                            {/* Footer */}
                                             <div
                                                 style={{
-                                                    background: 'black',
-                                                    padding: '15px 14px',
-                                                    marginTop: 'auto',
+                                                    padding: '16px 20px',
+                                                    background:
+                                                        'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 100%)',
+                                                    borderTop:
+                                                        '1px solid rgba(0, 0, 0, 0.04)',
                                                     textAlign: 'center',
                                                 }}
                                             >
                                                 <div
                                                     style={{
-                                                        color: 'rgba(255,255,255,0.5)',
-                                                        fontSize:
-                                                            'clamp(9px, 1vw, 11px)',
+                                                        fontSize: '13px',
+                                                        color: '#86868b',
+                                                        fontWeight: '500',
                                                     }}
                                                 >
-                                                    Click to see Progress
+                                                    Tap to see progress
                                                 </div>
                                             </div>
                                         </div>
@@ -581,7 +606,15 @@ export default function LiteLearningDashboard() {
     };
 
     return (
-        <div style={{ padding: '0px', fontFamily: 'Arial, sans-serif' }}>
+        <div
+            style={{
+                padding: '0px',
+                fontFamily:
+                    '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                background: 'linear-gradient(135deg, #f5f5f7 0%, #e8e8ea 100%)',
+                minHeight: '100vh',
+            }}
+        >
             {/* Auto Rotate Toggle */}
             <div
                 style={{
@@ -589,43 +622,57 @@ export default function LiteLearningDashboard() {
                     left: '20px',
                     bottom: '20px',
                     zIndex: 1000,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    padding: '10px 15px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    boxShadow:
+                        '0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08)',
+                    border: '1px solid rgba(0, 0, 0, 0.06)',
                 }}
             >
                 <label
                     style={{
-                        color: 'white',
+                        color: '#1d1d1f',
                         fontSize: '14px',
+                        fontWeight: '500',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
                         cursor: 'pointer',
+                        letterSpacing: '-0.2px',
                     }}
                 >
                     <input
                         type="checkbox"
                         checked={autoRotateEnabled}
                         onChange={(e) => setAutoRotateEnabled(e.target.checked)}
-                        style={{ cursor: 'pointer' }}
+                        style={{
+                            cursor: 'pointer',
+                            width: '18px',
+                            height: '18px',
+                            accentColor: '#007AFF',
+                        }}
                     />
-                    <span style={{ cursor: 'pointer' }}>Auto Rotate (6s)</span>
+                    Auto Rotate
                 </label>
             </div>
 
             {error && (
                 <div
                     style={{
-                        padding: '0px',
-                        backgroundColor: '#f8d7da',
-                        border: '1px solid #f5c6cb',
-                        marginBottom: '0px',
+                        margin: '20px',
+                        padding: '16px',
+                        background: 'rgba(255, 59, 48, 0.1)',
+                        border: '1px solid rgba(255, 59, 48, 0.3)',
+                        borderRadius: '12px',
                     }}
                 >
-                    <h3>Error</h3>
-                    <p>{error}</p>
+                    <h3 style={{ color: '#FF3B30', margin: '0 0 8px 0' }}>
+                        Error
+                    </h3>
+                    <p style={{ color: '#1d1d1f', margin: 0 }}>{error}</p>
                 </div>
             )}
 
@@ -634,14 +681,16 @@ export default function LiteLearningDashboard() {
             {!loading && !error && projects.length === 0 && (
                 <div
                     style={{
-                        padding: '0px',
+                        padding: '40px',
                         textAlign: 'center',
-                        backgroundColor: '#e2e3e5',
-                        border: '1px solid #d1d3d4',
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '20px',
+                        margin: '20px',
                     }}
                 >
-                    <h3>No Data</h3>
-                    <p>Click Refresh Data to load projects</p>
+                    <h3 style={{ color: '#1d1d1f' }}>No Data</h3>
+                    <p style={{ color: '#86868b' }}>Refresh to load projects</p>
                 </div>
             )}
         </div>
