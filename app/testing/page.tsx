@@ -157,7 +157,7 @@ export default function LiteLearningDashboard() {
 
         const interval = setInterval(() => {
             fetchProjects(); // Panggil fetchProjects lagi, bukan reload page
-        }, 60000); // 30 detik
+        }, 60000); // 60 detik
 
         return () => clearInterval(interval);
     }, []);

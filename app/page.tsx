@@ -3,14 +3,14 @@
 import PICList from '@/components/ui/PIC';
 import { useState, useEffect } from 'react';
 
-// ========== INTERFACES (Data Structure) ==========
+// ========== INTERFACES ==========
 interface SubProject {
     id: number;
     code: string;
     division: string;
-    progress: number; // 0.0 to 1.0
-    start_date: string; // ISO date string
-    deadline: string; // ISO date string
+    progress: number;
+    start_date: string;
+    deadline: string;
 }
 
 interface MainProject {
@@ -24,228 +24,183 @@ interface ApiResponse {
     error?: string;
 }
 
-// ========== DUMMY DATA FOR LEARNING ==========
-
 export default function LiteLearningDashboard() {
-    // ========== STATE MANAGEMENT ==========
     const [projects, setProjects] = useState<MainProject[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+    const [autoRotateEnabled, setAutoRotateEnabled] = useState<boolean>(true);
+    const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
 
-    // ========== DATA FETCHING SIMULATION ==========
+    // ========== UTILITY FUNCTIONS ==========
+    const findByDivision = (
+        subProjects: SubProject[],
+        division: string,
+        field: 'progress' | 'deadline' | 'start_date'
+    ) => {
+        const found = subProjects.find(
+            (p) => p.division.toLowerCase() === division.toLowerCase()
+        );
+        if (!found) return field === 'progress' ? 0 : 'N/A';
+        return field === 'progress' ? found.progress * 100 : found[field];
+    };
+
+    const calcTimeProgress = (startDate: string, deadline: string): number => {
+        if (startDate === 'N/A' || deadline === 'N/A') return 0;
+        const now = new Date().getTime();
+        const start = new Date(startDate).getTime();
+        const end = new Date(deadline).getTime();
+        return Math.min(
+            100,
+            Math.max(0, Math.round(((now - start) / (end - start)) * 100))
+        );
+    };
+
+    const getProgressStatus = (progress: number, timeProgress: number) => {
+        if (progress === 100) return { color: '#22c55e', status: 'Done' };
+        if (progress >= timeProgress + 10)
+            return { color: '#22c55e', status: 'ahead' };
+        if (progress < timeProgress - 10)
+            return { color: '#f87171', status: 'behind' };
+        return { color: 'white', status: 'ontrack' };
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString || dateString === 'N/A') return 'Date not';
+        return new Date(dateString)
+            .toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+            })
+            .replace('.', '')
+            .toUpperCase();
+    };
+
+    const calculateTotalProgress = (subProjects: SubProject[]): number => {
+        if (subProjects.length === 0) return 0;
+        const total = subProjects.reduce((sum, p) => sum + p.progress, 0);
+        return (total / subProjects.length) * 100;
+    };
+
+    // ========== FLIP HANDLER ==========
+    const handleCardFlip = (index: number) => {
+        setFlippedCards((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
+    };
+
+    // ========== DATA FETCHING ==========
     const fetchProjects = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            // Simulasi network delay
             await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // Simulasi API call
-            // console.log('📡 Fetching data from API...');
-
-            // Di real app, ini akan jadi:
             const response = await fetch('/api/projectsProd');
             const data = await response.json();
+            console.log('API response:', data);
 
-            // const data = DUMMY_API_RESPONSE;
             if (data.success) {
-                // Set data ke state
                 setProjects(data.projects);
-
-                // Log setiap project untuk pembelajaran
-                data.projects.forEach((project: MainProject, index: number) => {
-                    console.log(
-                        `📋 Project ${index + 1}: ${project.main_project}`
-                    );
-                    console.log(
-                        `   └── Sub-projects: ${project.sub_projects.length}`
-                    );
-                    project.sub_projects.forEach((sub) => {
-                        console.log(
-                            `       └── ${sub.division}: ${(
-                                sub.progress * 100
-                            ).toFixed(1)}%`
-                        );
-                    });
-                });
             } else {
                 throw new Error(data.error || 'API returned error');
             }
         } catch (err) {
-            console.error('❌ Error occurred:', err);
+            console.error('Error occurred:', err);
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
-            console.log('🏁 API call completed');
         }
     };
 
-    // ========== DATA PROCESSING FUNCTIONS ==========
-
-    // Function untuk cari progress berdasarkan division
-    const findProgressByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): number => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-        const result = found ? found.progress * 100 : 0;
-        return result;
-    };
-
-    const findDeadlineByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): string => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-        const result = found ? found.deadline : 'N/A';
-        return result;
-    };
-
-    const findStartDateByDivision = (
-        subProjects: SubProject[],
-        targetDivision: string
-    ): string => {
-        const found = subProjects.find(
-            (project) =>
-                project.division.toLowerCase() === targetDivision.toLowerCase()
-        );
-
-        const result = found ? found.start_date : 'N/A';
-        return result;
-    };
-
-    // Function untuk hitung total progress semua division
-
-    // Function untuk mapping data ke format yang diinginkan
     const mapProjectsToDisplay = (rawProjects: MainProject[]) => {
         return rawProjects.map((project, index) => {
-            console.log(`\n📋 Processing: ${project.main_project}`);
-
-            const designProgress = findProgressByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionProgress = findProgressByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorProgress = findProgressByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const designDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorDeadline = findDeadlineByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const designStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Design'
-            );
-            const constructionStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Construction'
-            );
-            const interiorStartDate = findStartDateByDivision(
-                project.sub_projects,
-                'Interior'
-            );
-
-            const totalProgress = calculateTotalProgress(project.sub_projects);
-
-            const mapped = {
+            const divisions = ['Design', 'Construction', 'Interior'];
+            const mapped: any = {
                 index: index + 1,
                 name: project.main_project,
-                design: designProgress,
-                construction: constructionProgress,
-                interior: interiorProgress,
-                total: totalProgress,
+                total: calculateTotalProgress(project.sub_projects),
                 subProjectCount: project.sub_projects.length,
-                designDeadline,
-                constructionDeadline,
-                interiorDeadline,
-                designStartDate,
-                constructionStartDate,
-                interiorStartDate,
-                rawData: project, // Keep original for reference
+                rawData: project,
             };
+
+            divisions.forEach((div) => {
+                const key = div.toLowerCase();
+                mapped[key] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'progress'
+                );
+                mapped[`${key}Deadline`] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'deadline'
+                );
+                mapped[`${key}StartDate`] = findByDivision(
+                    project.sub_projects,
+                    div,
+                    'start_date'
+                );
+            });
+
             return mapped;
         });
     };
-    const calculateTotalProgress = (subProjects: SubProject[]): number => {
-        if (subProjects.length === 0) return 0;
-
-        const total = subProjects.reduce((sum, project) => {
-            console.log(`   Adding ${project.division}: ${project.progress}`);
-            return sum + project.progress;
-        }, 0);
-
-        const average = (total / subProjects.length) * 100;
-        console.log(`   Total average: ${average.toFixed(1)}%`);
-        return average;
-    };
-
-    // ========== LIFECYCLE ==========
     useEffect(() => {
         fetchProjects();
+
+        const interval = setInterval(() => {
+            fetchProjects(); // Panggil fetchProjects lagi, bukan reload page
+        }, 60000); // 60 detik
+
+        return () => clearInterval(interval);
     }, []);
+
+    // ========== AUTO ROTATE EFFECT ==========
+    useEffect(() => {
+        if (!autoRotateEnabled || projects.length === 0) return;
+
+        const interval = setInterval(() => {
+            // Clear semua card yang lagi flip, terus flip 2 card baru
+            setFlippedCards(() => {
+                const newSet = new Set<number>();
+
+                // Hitung 2 card yang akan di-flip (1-based indexing)
+                const firstCard = (currentCardIndex % projects.length) + 1;
+                const secondCard =
+                    ((currentCardIndex + 1) % projects.length) + 1;
+
+                // Flip 2 card ini
+                newSet.add(firstCard);
+                newSet.add(secondCard);
+
+                return newSet;
+            });
+
+            // Update index, loncat 2 card
+            setCurrentCardIndex((prev) => (prev + 2) % projects.length);
+        }, 6000); // 6000ms = 6 detik
+
+        return () => clearInterval(interval);
+    }, [autoRotateEnabled, projects.length, currentCardIndex]);
 
     const renderProcessedData = () => {
         const mappedProjects = mapProjectsToDisplay(projects);
-
-        // Split projects into chunks of 7 for the grid layout
         const projectChunks = [];
         for (let i = 0; i < mappedProjects.length; i += 7) {
             projectChunks.push(mappedProjects.slice(i, i + 7));
         }
 
-        // Enhanced PIC names with more variety
-
-        // Calculate status color based on progress vs timeline
-        const getProgressStatus = (progress: number, timeProgress: number) => {
-            if (progress >= timeProgress + 10)
-                return { color: '#22c55e', status: 'ahead' }; // Bright Green - Ahead
-            if (progress < timeProgress - 10)
-                return { color: '#f87171', status: 'behind' }; // Bright Red - Behind
-            return { color: 'white', status: 'ontrack' }; // Bright Teal - On Track
-        };
-
-        const formatDate = (dateString: string) => {
-            if (!dateString) return '13 NOV 2025';
-            const date = new Date(dateString);
-            return date
-                .toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                })
-                .replace('.', '')
-                .toUpperCase();
-        };
-
         return (
             <div
-                style={{
-                    marginTop: '5px ',
-                    padding: '1px',
-                    minHeight: '100vh',
-                }}
+                style={{ marginTop: '5px', padding: '1px', minHeight: '100vh' }}
             >
                 {projectChunks.map((chunk, rowIndex) => (
                     <div
@@ -253,503 +208,370 @@ export default function LiteLearningDashboard() {
                         style={{
                             display: 'grid',
                             gridTemplateColumns:
-                                'repeat(auto-fit, minmax(100px, 1fr))',
+                                'repeat(auto-fit, minmax(70px, 1fr))',
                             gap: '5px',
                             marginBottom: '5px',
                             maxWidth: '100%',
-                            borderColor: '#cbd5e1',
                         }}
                     >
-                        {chunk.map((project, index) => {
-                            // Calculate time progress for each phase
-                            const designTimeProgress = Math.min(
-                                100,
-                                Math.max(
-                                    0,
-                                    Math.round(
-                                        ((new Date().getTime() -
-                                            new Date(
-                                                project.designStartDate
-                                            ).getTime()) /
-                                            (new Date(
-                                                project.designDeadline
-                                            ).getTime() -
-                                                new Date(
-                                                    project.designStartDate
-                                                ).getTime())) *
-                                            100
-                                    )
-                                )
-                            );
-                            const constructionTimeProgress = Math.min(
-                                100,
-                                Math.max(
-                                    0,
-                                    Math.round(
-                                        ((new Date().getTime() -
-                                            new Date(
-                                                project.constructionStartDate
-                                            ).getTime()) /
-                                            (new Date(
-                                                project.constructionDeadline
-                                            ).getTime() -
-                                                new Date(
-                                                    project.constructionStartDate
-                                                ).getTime())) *
-                                            100
-                                    )
-                                )
-                            );
-                            const interiorTimeProgress = Math.min(
-                                100,
-                                Math.max(
-                                    0,
-                                    Math.round(
-                                        ((new Date().getTime() -
-                                            new Date(
-                                                project.interiorStartDate
-                                            ).getTime()) /
-                                            (new Date(
-                                                project.interiorDeadline
-                                            ).getTime() -
-                                                new Date(
-                                                    project.interiorStartDate
-                                                ).getTime())) *
-                                            100
-                                    )
-                                )
-                            );
-
-                            const designStatus = getProgressStatus(
-                                project.design,
-                                designTimeProgress
-                            );
-                            const constructionStatus = getProgressStatus(
-                                project.construction,
-                                constructionTimeProgress
-                            );
-                            const interiorStatus = getProgressStatus(
-                                project.interior,
-                                interiorTimeProgress
-                            );
+                        {chunk.map((project) => {
+                            const isFlipped = flippedCards.has(project.index);
+                            const phases = [
+                                { name: 'design', label: 'DESIGN' },
+                                { name: 'construction', label: 'SIPIL' },
+                                { name: 'interior', label: 'INTERIOR' },
+                            ];
 
                             return (
                                 <div
                                     key={project.index}
                                     style={{
-                                        backgroundColor: 'black',
-                                        backdropFilter: 'blur(10px)',
-                                        color: '#1e293b',
-                                        borderRadius: '16px',
-                                        overflow: 'hidden',
-                                        minHeight: '420px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        boxShadow:
-                                            '0 4px 20px rgba(0,0,0,0.08)',
-                                        border: '1px solid rgba(203, 213, 225, 0.4)',
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer',
-                                        position: 'relative',
+                                        perspective: '500px',
+                                        minHeight: '350px',
                                     }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform =
-                                            'translateY(-4px)';
-                                        e.currentTarget.style.boxShadow =
-                                            '0 12px 40px rgba(0,0,0,0.12)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform =
-                                            'translateY(0)';
-                                        e.currentTarget.style.boxShadow =
-                                            '0 4px 20px rgba(0,0,0,0.08)';
-                                    }}
+                                    onClick={() =>
+                                        handleCardFlip(project.index)
+                                    }
                                 >
-                                    {/* Status Indicator */}
-
-                                    {/* Header - Project Name */}
                                     <div
                                         style={{
-                                            background: 'black',
-                                            padding: '3_px',
-                                            textAlign: 'center',
                                             position: 'relative',
-                                            height: '70px', // Fixed height untuk 2 baris
-                                            textOverflow: 'ellipsis',
-                                            lineHeight: '1.2',
+                                            width: '100%',
+                                            height: '100%',
+                                            minHeight: '300px',
+                                            transition: 'transform 0.6s',
+                                            transformStyle: 'preserve-3d',
+                                            transform: isFlipped
+                                                ? 'rotateY(180deg)'
+                                                : 'rotateY(0deg)',
+                                            cursor: 'pointer',
                                         }}
                                     >
-                                        {/* <div
+                                        {/* FRONT SIDE - Progress */}
+                                        <div
                                             style={{
                                                 position: 'absolute',
-                                                top: '8px',
-                                                left: '15px',
-                                                fontSize:
-                                                    'clamp(15px, 1vw, 12px)',
-                                                fontWeight: '500',
-                                                color: 'rgba(255,255,255,0.7)',
+                                                width: '100%',
+                                                height: '100%',
+                                                backfaceVisibility: 'hidden',
+                                                backgroundColor: 'black',
+                                                borderRadius: '16px',
+                                                overflow: 'hidden',
+                                                boxShadow:
+                                                    '0 4px 20px rgba(0,0,0,0.08)',
+                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
                                             }}
                                         >
-                                            #{project.index}
-                                        </div> */}
+                                            {/* Header */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '3px',
+                                                    textAlign: 'center',
+                                                    height: '70px',
+                                                    lineHeight: '1.2',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontSize:
+                                                            'clamp(22px, 1.8vw, 18px)',
+                                                        fontWeight: '600',
+                                                        color: 'white',
+                                                        letterSpacing: '0.5px',
+                                                        lineHeight: '1.3',
+                                                        margin: '10px 4px',
+                                                    }}
+                                                >
+                                                    {project.name.toUpperCase()}
+                                                </div>
+                                            </div>
+
+                                            {/* Progress Section */}
+                                            <div
+                                                style={{
+                                                    padding: '0px  20px',
+                                                    // flex: 1,
+                                                }}
+                                            >
+                                                {phases.map(
+                                                    ({ name, label }) => {
+                                                        const progress =
+                                                            project[name];
+                                                        const timeProgress =
+                                                            calcTimeProgress(
+                                                                project[
+                                                                    `${name}StartDate`
+                                                                ],
+                                                                project[
+                                                                    `${name}Deadline`
+                                                                ]
+                                                            );
+                                                        const status =
+                                                            getProgressStatus(
+                                                                progress,
+                                                                timeProgress
+                                                            );
+
+                                                        return (
+                                                            <div
+                                                                key={name}
+                                                                style={{
+                                                                    marginBottom:
+                                                                        '3px',
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        display:
+                                                                            'flex',
+                                                                        justifyContent:
+                                                                            'space-between',
+                                                                        alignItems:
+                                                                            'center',
+                                                                        marginBottom:
+                                                                            '8px',
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            display:
+                                                                                'flex',
+                                                                            alignItems:
+                                                                                'center',
+                                                                        }}
+                                                                    >
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    'clamp(18px, 2.5vw, 24px)',
+                                                                                fontWeight:
+                                                                                    '700',
+                                                                                color: status.color,
+                                                                                minWidth:
+                                                                                    '55px',
+                                                                            }}
+                                                                        >
+                                                                            {progress.toFixed(
+                                                                                0
+                                                                            )}
+                                                                            %
+                                                                        </span>
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    'clamp(20px, 1.3vw, 14px)',
+                                                                                fontWeight:
+                                                                                    '600',
+                                                                                marginLeft:
+                                                                                    '12px',
+                                                                                color: 'white',
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize:
+                                                                                'clamp(8px, 0.9vw, 10px)',
+                                                                            color: status.color,
+                                                                            fontWeight:
+                                                                                '600',
+                                                                            textTransform:
+                                                                                'uppercase',
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            status.status
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        position:
+                                                                            'relative',
+                                                                        width: '100%',
+                                                                        height: '18px',
+                                                                        backgroundColor:
+                                                                            'black',
+                                                                        borderRadius:
+                                                                            '4px',
+                                                                        overflow:
+                                                                            'hidden',
+                                                                        border: '1px solid #e2e8f0',
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            position:
+                                                                                'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            height: '100%',
+                                                                            backgroundColor:
+                                                                                '#e2e8f0',
+                                                                            width: `${timeProgress}%`,
+                                                                            transition:
+                                                                                'width 0.3s ease',
+                                                                        }}
+                                                                    ></div>
+                                                                    <div
+                                                                        style={{
+                                                                            position:
+                                                                                'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            height: '100%',
+                                                                            backgroundColor:
+                                                                                status.color,
+                                                                            width: `${progress}%`,
+                                                                            transition:
+                                                                                'width 0.3s ease',
+                                                                        }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+
+                                            {/* Bottom - BAST */}
+                                            <div
+                                                style={{
+                                                    background: 'black',
+                                                    padding: '15px 14px',
+                                                    marginTop: '5px',
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        color: 'white',
+                                                        fontWeight: '600',
+                                                        fontSize:
+                                                            'clamp(11px, 1.3vw, 14px)',
+                                                        letterSpacing: '0.5px',
+                                                    }}
+                                                >
+                                                    BAST :{' '}
+                                                    {formatDate(
+                                                        project.interiorDeadline
+                                                    )}
+                                                </div>
+                                                {/* <div
+                                                    style={{
+                                                        color: 'rgba(255,255,255,0.5)',
+                                                        fontSize:
+                                                            'clamp(9px, 1vw, 11px)',
+                                                        marginTop: '8px',
+                                                    }}
+                                                >
+                                                    Click to see PIC
+                                                </div> */}
+                                            </div>
+                                        </div>
+
+                                        {/* BACK SIDE - PIC */}
                                         <div
                                             style={{
-                                                fontSize:
-                                                    'clamp(22px, 1.8vw, 18px)',
-                                                fontWeight: '600',
-                                                color: 'white',
-                                                letterSpacing: '0.5px',
-                                                lineHeight: '1.3',
-                                                margin: '10px 4px 10px 4px',
+                                                position: 'absolute',
+                                                width: '100%',
+                                                height: '100%',
+                                                backfaceVisibility: 'hidden',
+                                                backgroundColor: 'black',
+                                                borderRadius: '16px',
+                                                overflow: 'hidden',
+                                                boxShadow:
+                                                    '0 4px 20px rgba(0,0,0,0.08)',
+                                                border: '1px solid rgba(203, 213, 225, 0.4)',
+                                                transform: 'rotateY(180deg)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
                                             }}
                                         >
-                                            {project.name.toUpperCase()}
-                                        </div>
-                                        {/* <div
-                                            style={{
-                                                fontSize:
-                                                    'clamp(12px, 1.2vw, 14px)',
-                                                fontWeight: '500',
-                                                color: 'rgba(255,255,255,0.9)',
-                                                marginTop: '5px',
-                                            }}
-                                        >
-                                            {project.total.toFixed(1)}% Complete
-                                        </div> */}
-                                    </div>
-
-                                    {/* Progress Section */}
-                                    <div
-                                        style={{
-                                            padding: '5px 20px 20px',
-                                            flex: 1,
-                                        }}
-                                    >
-                                        {/* Design Progress */}
-                                        <div style={{ marginBottom: '3px' }}>
+                                            {/* Header */}
                                             <div
                                                 style={{
-                                                    display: 'flex',
-                                                    justifyContent:
-                                                        'space-between',
-                                                    alignItems: 'center',
-                                                    marginBottom: '8px',
+                                                    background: 'black',
+                                                    padding: '3px',
+                                                    textAlign: 'center',
+                                                    height: '70px',
+                                                    lineHeight: '1.2',
                                                 }}
                                             >
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(18px, 2.5vw, 24px)',
-                                                            fontWeight: '700',
-                                                            color: designStatus.color,
-                                                            minWidth: '55px',
-                                                        }}
-                                                    >
-                                                        {project.design.toFixed(
-                                                            0
-                                                        )}
-                                                        %
-                                                    </span>
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(20px, 1.3vw, 14px)',
-                                                            fontWeight: '600',
-                                                            marginLeft: '12px',
-                                                            color: 'white',
-                                                        }}
-                                                    >
-                                                        DESIGN
-                                                    </span>
-                                                </div>
                                                 <div
                                                     style={{
                                                         fontSize:
-                                                            'clamp(8px, 0.9vw, 10px)',
-                                                        color: designStatus.color,
+                                                            'clamp(22px, 1.8vw, 18px)',
                                                         fontWeight: '600',
-                                                        textTransform:
-                                                            'uppercase',
+                                                        color: 'white',
+                                                        letterSpacing: '0.5px',
+                                                        lineHeight: '1.3',
+                                                        margin: '10px 4px',
                                                     }}
                                                 >
-                                                    {designStatus.status}
+                                                    {project.name.toUpperCase()}
                                                 </div>
                                             </div>
-                                            <div
-                                                style={{
-                                                    position: 'relative',
-                                                    width: '100%',
-                                                    height: '18px',
-                                                    backgroundColor: 'Black',
-                                                    borderRadius: '4px',
-                                                    overflow: 'hidden',
-                                                    border: '1px solid #e2e8f0',
-                                                }}
-                                            >
-                                                {/* Time progress (background) */}
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            '#e2e8f0',
-                                                        width: `${designTimeProgress}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                                {/* Project progress (foreground) */}
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            designStatus.color,
-                                                        width: `${project.design}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
 
-                                        {/* Construction Progress */}
-                                        <div style={{ marginBottom: '3px' }}>
+                                            {/* PIC Content */}
                                             <div
                                                 style={{
+                                                    flex: 1,
+                                                    padding: '10px 20px',
                                                     display: 'flex',
-                                                    justifyContent:
-                                                        'space-between',
-                                                    alignItems: 'center',
-                                                    marginBottom: '8px',
+                                                    flexDirection: 'column',
+                                                    justifyContent: 'center',
                                                 }}
                                             >
                                                 <div
                                                     style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(18px, 2.5vw, 24px)',
-                                                            fontWeight: '700',
-                                                            color: constructionStatus.color,
-                                                            minWidth: '55px',
-                                                        }}
-                                                    >
-                                                        {project.construction.toFixed(
-                                                            0
-                                                        )}
-                                                        %
-                                                    </span>
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(20px, 1.3vw, 14px)',
-                                                            fontWeight: '600',
-                                                            marginLeft: '12px',
-                                                            color: 'white',
-                                                        }}
-                                                    >
-                                                        SIPIL
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={{
+                                                        color: 'white',
                                                         fontSize:
-                                                            'clamp(8px, 0.9vw, 10px)',
-                                                        color: constructionStatus.color,
+                                                            'clamp(16px, 1.5vw, 18px)',
                                                         fontWeight: '600',
-                                                        textTransform:
-                                                            'uppercase',
+                                                        marginBottom: '20px',
+                                                        textAlign: 'center',
                                                     }}
                                                 >
-                                                    {constructionStatus.status}
+                                                    Person In Charge
                                                 </div>
+                                                <PICList
+                                                    projectName={project.name}
+                                                />
                                             </div>
-                                            <div
-                                                style={{
-                                                    position: 'relative',
-                                                    width: '100%',
-                                                    height: '18px',
-                                                    backgroundColor: 'black',
-                                                    borderRadius: '4px',
-                                                    overflow: 'hidden',
-                                                    border: '1px solid #e2e8f0',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            '#e2e8f0',
-                                                        width: `${constructionTimeProgress}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            constructionStatus.color,
-                                                        width: `${project.construction}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
 
-                                        {/* Interior Progress */}
-                                        <div style={{ marginBottom: '3px' }}>
+                                            {/* Bottom */}
                                             <div
                                                 style={{
-                                                    display: 'flex',
-                                                    justifyContent:
-                                                        'space-between',
-                                                    alignItems: 'center',
-                                                    marginBottom: '8px',
+                                                    background: 'black',
+                                                    padding: '15px 14px',
+                                                    marginTop: '20px',
+                                                    textAlign: 'center',
                                                 }}
                                             >
                                                 <div
                                                     style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(18px, 2.5vw, 24px)',
-                                                            fontWeight: '700',
-                                                            color: interiorStatus.color,
-                                                            minWidth: '55px',
-                                                        }}
-                                                    >
-                                                        {project.interior.toFixed(
-                                                            0
-                                                        )}
-                                                        %
-                                                    </span>
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                'clamp(20px, 1.3vw, 14px)',
-                                                            fontWeight: '600',
-                                                            marginLeft: '12px',
-                                                            color: 'white',
-                                                        }}
-                                                    >
-                                                        INTERIOR
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    style={{
+                                                        color: 'rgba(255,255,255,0.5)',
                                                         fontSize:
-                                                            'clamp(8px, 0.9vw, 10px)',
-                                                        color: interiorStatus.color,
-                                                        fontWeight: '600',
-                                                        textTransform:
-                                                            'uppercase',
+                                                            'clamp(9px, 1vw, 11px)',
                                                     }}
                                                 >
-                                                    {interiorStatus.status}
+                                                    Click to see Progress
                                                 </div>
                                             </div>
-                                            <div
-                                                style={{
-                                                    position: 'relative',
-                                                    width: '100%',
-                                                    height: '15px',
-                                                    backgroundColor: 'black ',
-                                                    borderRadius: '4px',
-                                                    overflow: 'hidden',
-                                                    border: '1px solid #e2e8f0',
-                                                }}
-                                            >
-                                                {/* cbd5e1 */}
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            '#e2e8f0',
-                                                        width: `${interiorTimeProgress}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                                <div
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        height: '100%',
-                                                        backgroundColor:
-                                                            interiorStatus.color,
-                                                        width: `${project.interior}%`,
-                                                        transition:
-                                                            'width 0.3s ease',
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom Section - PIC Info */}
-                                    <div
-                                        style={{
-                                            background: 'Black',
-                                            padding: '5px 14px',
-                                            marginTop: 'auto',
-                                        }}
-                                    >
-                                        {/* PIC List */}
-                                        <PICList projectName={project.name} />
-
-                                        {/* BAST Date */}
-                                        <div
-                                            style={{
-                                                textAlign: 'center',
-                                                color: 'white',
-                                                fontWeight: '600',
-                                                fontSize:
-                                                    'clamp(11px, 1.3vw, 14px)',
-                                                letterSpacing: '0.5px',
-                                            }}
-                                        >
-                                            BAST :{' '}
-                                            {formatDate(
-                                                project.interiorDeadline
-                                            )}
                                         </div>
                                     </div>
                                 </div>
                             );
                         })}
 
-                        {/* Fill empty slots if chunk has less than 7 items */}
                         {Array.from(
                             { length: 7 - chunk.length },
                             (_, index) => (
@@ -764,10 +586,42 @@ export default function LiteLearningDashboard() {
             </div>
         );
     };
-    // ========== MAIN RENDER ==========
+
     return (
         <div style={{ padding: '0px', fontFamily: 'Arial, sans-serif' }}>
-            {/* Error Display */}
+            {/* Auto Rotate Toggle */}
+            <div
+                style={{
+                    position: 'fixed',
+                    left: '20px',
+                    bottom: '20px',
+                    zIndex: 1000,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: '10px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                }}
+            >
+                <label
+                    style={{
+                        color: 'white',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    <input
+                        type="checkbox"
+                        checked={autoRotateEnabled}
+                        onChange={(e) => setAutoRotateEnabled(e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                    />
+                    <span style={{ cursor: 'pointer' }}>Auto Rotate (6s)</span>
+                </label>
+            </div>
+
             {error && (
                 <div
                     style={{
@@ -777,18 +631,13 @@ export default function LiteLearningDashboard() {
                         marginBottom: '0px',
                     }}
                 >
-                    <h3>❌ Error</h3>
+                    <h3>Error</h3>
                     <p>{error}</p>
                 </div>
             )}
 
-            {/* Raw Data */}
-            {/* {showRawData && renderRawData()} */}
-
-            {/* Processed Data */}
             {!loading && !error && projects.length > 0 && renderProcessedData()}
 
-            {/* No Data */}
             {!loading && !error && projects.length === 0 && (
                 <div
                     style={{
@@ -798,8 +647,8 @@ export default function LiteLearningDashboard() {
                         border: '1px solid #d1d3d4',
                     }}
                 >
-                    <h3>📭 No Data</h3>
-                    <p>Click Refresh Data 🔄 to load projects</p>
+                    <h3>No Data</h3>
+                    <p>Click Refresh Data to load projects</p>
                 </div>
             )}
         </div>

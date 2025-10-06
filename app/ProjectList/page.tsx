@@ -107,7 +107,7 @@ export default function LiteLearningDashboard() {
 
         try {
             await new Promise((resolve) => setTimeout(resolve, 100));
-            const response = await fetch('/api/projectsProd');
+            const response = await fetch('/api/FetchGroupProjects');
             const data = await response.json();
 
             if (data.success) {
